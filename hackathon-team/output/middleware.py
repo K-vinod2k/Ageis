@@ -649,6 +649,9 @@ setInterval(syncTelemetry,4000);syncTelemetry();
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui():
+    ui_path = Path(__file__).resolve().parent.parent / "ui" / "index.html"
+    if ui_path.exists():
+        return HTMLResponse(content=ui_path.read_text(encoding="utf-8"))
     return HTMLResponse(content=WAR_ROOM_HTML)
 
 

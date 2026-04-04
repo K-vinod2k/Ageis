@@ -36,15 +36,8 @@ echo ""
 mkdir -p memory
 
 # ── Launch War Room ──
-echo "🚀 Launching War Room Dashboard..."
-echo "   URL: http://localhost:8501"
+echo "Launching War Room..."
+echo "   URL: http://localhost:8080"
 echo ""
 
-streamlit run ui/app.py \
-    --server.port 8501 \
-    --server.headless true \
-    --theme.base dark \
-    --theme.primaryColor "#e94560" \
-    --theme.backgroundColor "#0a0e17" \
-    --theme.secondaryBackgroundColor "#161b22" \
-    --theme.textColor "#c9d1d9"
+uvicorn output.middleware:app --host 0.0.0.0 --port 8080 --reload

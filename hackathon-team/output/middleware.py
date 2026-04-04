@@ -18,7 +18,6 @@ Set environment variables:
 """
 
 import os
-import json
 import asyncio
 import logging
 from datetime import datetime
@@ -411,16 +410,189 @@ async def demo_clean():
     return DEMO_CLEAN_PR
 
 
-# ─────────────────────────── War Room UI ───────────────────────────
+# ─────────────────────────── War Room UI (inline — no file path dependency) ───────────────────────────
 
-_UI_PATH = Path(__file__).resolve().parent.parent / "ui" / "index.html"
+WAR_ROOM_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEGIS — Zero-Trust War Room</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0e17;color:#c9d1d9;min-height:100vh;overflow-x:hidden}
+.banner{background:linear-gradient(90deg,#161b22,#0d1117);border-bottom:1px solid #e94560;padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+.banner-title{font-weight:900;font-size:18px;letter-spacing:2px;text-transform:uppercase}
+.banner-right{display:flex;align-items:center;gap:16px}
+.session-id{font-size:12px;color:#8b949e;font-family:ui-monospace,monospace}
+.live-badge{background:rgba(233,69,96,.15);border:1px solid #e94560;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#e94560;display:flex;align-items:center;gap:6px;letter-spacing:1px}
+.pulse{width:7px;height:7px;border-radius:50%;background:#e94560;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(233,69,96,.7)}70%{box-shadow:0 0 0 6px transparent}}
+.container{padding:20px 28px;max-width:1600px;margin:0 auto}
+.telemetry{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.metric-card{background:rgba(22,27,34,.7);border:1px solid rgba(48,54,61,.7);border-radius:10px;padding:18px;text-align:center;transition:border .2s}
+.metric-card:hover{border-color:#58a6ff}
+.metric-value{font-family:ui-monospace,monospace;font-size:34px;font-weight:700}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#8b949e;margin-top:6px}
+.red{color:#f85149}.green{color:#3fb950}.amber{color:#d29922}.blue{color:#58a6ff}
+.main-grid{display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px}
+.panel{background:rgba(22,27,34,.7);border:1px solid rgba(48,54,61,.7);border-radius:10px;padding:18px}
+.section-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8b949e;border-bottom:1px solid rgba(48,54,61,.5);padding-bottom:10px;margin-bottom:14px}
+.right-column{display:flex;flex-direction:column;gap:20px}
+.log-container{max-height:480px;overflow-y:auto;padding-right:6px}
+.log-container::-webkit-scrollbar{width:4px}
+.log-container::-webkit-scrollbar-thumb{background:rgba(48,54,61,.8);border-radius:2px}
+.empty-state{text-align:center;color:#8b949e;padding:40px;font-style:italic}
+.agent-card{background:rgba(13,17,23,.9);border:1px solid rgba(48,54,61,.5);border-radius:8px;padding:14px;margin-bottom:10px;animation:slideUp .3s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.agent-card-header{display:flex;justify-content:space-between;margin-bottom:8px}
+.agent-card-title{font-weight:700;font-size:12px;letter-spacing:1px}
+.agent-card-time{font-family:ui-monospace,monospace;font-size:10px;color:#8b949e}
+.agent-card-content{font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.intercept-log{max-height:260px;overflow-y:auto}
+.log-entry{font-family:ui-monospace,monospace;font-size:11px;padding:10px;border-left:3px solid;background:rgba(0,0,0,.2);margin-bottom:8px;border-radius:0 6px 6px 0;animation:flash .8s ease-out}
+@keyframes flash{0%{background:rgba(248,81,73,.25)}100%{background:rgba(0,0,0,.2)}}
+.log-blocked{border-left-color:#f85149;background:rgba(248,81,73,.05)}
+.log-info{border-left-color:#58a6ff}.log-clean{border-left-color:#3fb950}
+.log-label-blocked{color:#f85149;font-weight:700}.log-label-info{color:#58a6ff;font-weight:700}.log-label-clean{color:#3fb950;font-weight:700}
+.log-time{color:#8b949e;font-size:10px}
+.roster-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(48,54,61,.3)}
+.roster-item:last-child{border-bottom:none}
+.agent-role{font-size:10px;color:#8b949e;margin-top:2px}
+.badge{font-family:ui-monospace,monospace;font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(139,148,158,.15);color:#8b949e;transition:all .3s}
+.badge-active{background:rgba(88,166,255,.2);color:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,.3)}
+.badge-attacking{background:rgba(248,81,73,.2);color:#f85149;box-shadow:0 0 8px rgba(248,81,73,.3);animation:pulse 1s infinite}
+.chat-area{background:rgba(22,27,34,.7);border:1px solid rgba(48,54,61,.7);border-radius:10px;padding:16px 20px}
+.input-row{display:flex;gap:10px;margin-top:10px}
+input[type=text]{flex:1;background:#0d1117;border:1px solid rgba(48,54,61,.7);color:#c9d1d9;padding:13px 16px;border-radius:8px;font-family:ui-monospace,monospace;font-size:13px;outline:none;transition:border .2s}
+input[type=text]:focus{border-color:#58a6ff}
+.btn{background:linear-gradient(135deg,#1f6feb,#173873);border:1px solid #388bfd;color:#fff;font-weight:700;letter-spacing:1px;padding:0 22px;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:hover{filter:brightness(1.2)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.loading{font-size:11px;color:#d29922;margin-top:8px;display:none}
+.eval-box{padding:10px;background:rgba(232,176,75,.08);border-radius:6px;border:1px solid rgba(232,176,75,.3)}
+</style>
+</head>
+<body>
+<div class="banner">
+  <div class="banner-title">&#x2694;&#xFE0F; AEGIS &mdash; Zero-Trust Threat Analyst
+    <span style="font-size:.55em;opacity:.7;margin-left:14px;font-weight:400;letter-spacing:0">Powered by <a href="https://secure.validia.ai/" target="_blank" style="color:#58a6ff;text-decoration:none">Validia Secure</a></span>
+  </div>
+  <div class="banner-right">
+    <span class="session-id" id="sessionDisplay">SESSION: INIT</span>
+    <div class="live-badge"><span class="pulse"></span> LIVE</div>
+  </div>
+</div>
+<div class="container">
+  <div class="telemetry">
+    <div class="metric-card"><div class="metric-value red" id="m-blocked">0</div><div class="metric-label">&#x1F6E1;&#xFE0F; Threats Blocked</div></div>
+    <div class="metric-card"><div class="metric-value amber" id="m-loops">0</div><div class="metric-label">&#x1F504; Patch Loops</div></div>
+    <div class="metric-card"><div class="metric-value blue" id="m-agents">0</div><div class="metric-label">&#x1F916; Agents Deployed</div></div>
+    <div class="metric-card" onclick="syncTelemetry()" title="Click to sync"><div class="metric-value green" id="m-clean">0</div><div class="metric-label">&#x2705; Clean Inputs</div></div>
+  </div>
+  <div class="main-grid">
+    <div class="panel">
+      <div class="section-header">&#x1F52C; Vinod's Workflow &mdash; Threat Analysis Feed</div>
+      <div id="agentFeed" class="log-container"><div class="empty-state">No activity yet. Send a directive below to engage the pipeline.</div></div>
+    </div>
+    <div class="right-column">
+      <div class="panel">
+        <div class="section-header">&#x2623;&#xFE0F; Hazmat Suit &mdash; Validia Containment Layer</div>
+        <div id="hazmatLog" class="intercept-log">
+          <div class="log-entry log-info"><span class="log-time">STANDBY</span><br><span class="log-label-info">&#x2623;&#xFE0F; HAZMAT SUIT ACTIVE</span><br>Monitoring /webhook/github for payloads&hellip;</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="section-header">&#x1F916; Agent Roster</div>
+        <div>
+          <div class="roster-item"><div><span style="color:#58a6ff">&#x1F3D7;&#xFE0F; <strong>BUILDER</strong></span><div class="agent-role">Cognitive Architect</div></div><span class="badge" id="b-builder">IDLE</span></div>
+          <div class="roster-item"><div><span style="color:#f85149">&#x1F534; <strong>BREAKER</strong></span><div class="agent-role">Adversarial Payload</div></div><span class="badge" id="b-breaker">IDLE</span></div>
+          <div class="roster-item"><div><span style="color:#3fb950">&#x1F527; <strong>PLUMBER</strong></span><div class="agent-role">Zero-Trust Config</div></div><span class="badge" id="b-plumber">IDLE</span></div>
+          <div class="roster-item"><div><span style="color:#bc8cff">&#x1F4CA; <strong>PRESENTER</strong></span><div class="agent-role">Threat Intel</div></div><span class="badge" id="b-presenter">IDLE</span></div>
+          <div class="roster-item"><div><span style="color:#e8b04b">&#x1F9E0; <strong>EVALUATOR</strong></span><div class="agent-role">Quality Oracle</div></div><span class="badge" id="b-evaluator">IDLE</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chat-area">
+    <div class="section-header" style="border:none;margin-bottom:4px">&#x2328;&#xFE0F; Mission Directive</div>
+    <div class="input-row">
+      <input type="text" id="missionInput" placeholder="Type a directive&hellip; e.g. 'Analyze the poisoned PR'">
+      <button class="btn" id="execBtn" onclick="sendMission()">EXECUTE</button>
+    </div>
+    <div class="loading" id="loadingMsg">&#x1F504; Agents executing&hellip; Loop of Absolute Security engaged</div>
+  </div>
+</div>
+<script>
+const SESSION_ID = crypto.randomUUID();
+document.getElementById('sessionDisplay').textContent = 'SESSION: ' + SESSION_ID.slice(0,8).toUpperCase();
+const API = window.location.origin;
+let stats = {blocked:0,loops:0,agents:0,clean:0};
+const colorMap={user:'#c9d1d9',coordinator:'#d29922',builder:'#58a6ff',breaker:'#f85149',plumber:'#3fb950',presenter:'#bc8cff',evaluator:'#e8b04b',system:'#8b949e'};
+const iconMap={user:'&#x1F464;',coordinator:'&#x1F3AF;',builder:'&#x1F3D7;',breaker:'&#x1F534;',plumber:'&#x1F527;',presenter:'&#x1F4CA;',evaluator:'&#x1F9E0;',system:'&#x2699;'};
+async function sendMission(){
+  const input=document.getElementById('missionInput');
+  const text=input.value.trim();if(!text)return;
+  input.value='';input.disabled=true;
+  document.getElementById('execBtn').disabled=true;
+  document.getElementById('loadingMsg').style.display='block';
+  addAgentCard('user',text);setRoster('working');
+  try{
+    const res=await fetch(API+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,session_id:SESSION_ID})});
+    const data=await res.json();
+    document.querySelectorAll('.empty-state').forEach(e=>e.remove());
+    if(res.ok){
+      stats.agents+=data.messages.length;stats.loops+=(data.iterations||0);updateMetrics();
+      data.messages.forEach(m=>addAgentCard(m.role,m.content));
+      if(data.verdict==='PASS'){addHazmat('clean','SYSTEM HELD','Pipeline secured after '+(data.iterations)+' loop(s).');}
+      else{addHazmat('blocked','VULNERABILITY FOUND','Breaker found gaps after '+(data.iterations)+' loop(s).');}
+    }else{addAgentCard('system','Error: '+(data.error||'Unknown'));}
+  }catch(err){addAgentCard('system','Network error: '+err.message);}
+  finally{input.disabled=false;document.getElementById('execBtn').disabled=false;document.getElementById('loadingMsg').style.display='none';input.focus();setRoster('idle');}
+}
+document.getElementById('missionInput').addEventListener('keypress',e=>{if(e.key==='Enter')sendMission();});
+function setRoster(mode){
+  ['builder','plumber','presenter','evaluator'].forEach(id=>{const el=document.getElementById('b-'+id);if(mode==='working'){el.className='badge badge-active';el.textContent='WORKING';}else{el.className='badge';el.textContent='IDLE';}});
+  const br=document.getElementById('b-breaker');if(mode==='working'){br.className='badge badge-attacking';br.textContent='ATTACKING';}else{br.className='badge';br.textContent='IDLE';}
+}
+function addAgentCard(role,content){
+  const time=new Date().toLocaleTimeString('en-US',{hour12:false});
+  const col=colorMap[role]||'#c9d1d9';const icon=iconMap[role]||'&#x1F4AC;';
+  let body=esc(content);
+  if(role==='evaluator'&&content.includes('Score:')){body='<div class="eval-box">'+body+'</div>';}
+  else if(body.length>900){body=body.substring(0,900)+'\\n\\n[TRUNCATED]';}
+  const feed=document.getElementById('agentFeed');
+  feed.insertAdjacentHTML('beforeend','<div class="agent-card" style="border-color:'+col+'35"><div class="agent-card-header"><span class="agent-card-title" style="color:'+col+'">'+icon+' '+role.toUpperCase()+'</span><span class="agent-card-time">'+time+'</span></div><div class="agent-card-content">'+body+'</div></div>');
+  feed.scrollTop=feed.scrollHeight;
+}
+function addHazmat(type,label,detail){
+  const time=new Date().toLocaleTimeString('en-US',{hour12:false});
+  document.getElementById('hazmatLog').insertAdjacentHTML('afterbegin','<div class="log-entry log-'+type+'"><span class="log-time">'+time+'</span><br><span class="log-label-'+type+'">'+label+'</span><br>'+esc(detail)+'</div>');
+}
+async function syncTelemetry(){
+  try{
+    const data=await fetch(API+'/telemetry').then(r=>r.json());
+    stats.blocked=data.blocked||0;stats.clean=data.clean||0;updateMetrics();
+    if(data.events&&data.events.length){
+      const log=document.getElementById('hazmatLog');log.innerHTML='';
+      [...data.events].reverse().forEach(ev=>{addHazmat(ev.blocked?'blocked':'clean',ev.blocked?'THREAT BLOCKED':'PAYLOAD FORWARDED','Score: '+ev.threat_score+' | '+(ev.reason||''));});
+    }
+  }catch(_){}
+}
+function updateMetrics(){
+  document.getElementById('m-blocked').textContent=stats.blocked;
+  document.getElementById('m-loops').textContent=stats.loops;
+  document.getElementById('m-agents').textContent=stats.agents;
+  document.getElementById('m-clean').textContent=stats.clean;
+}
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+setInterval(syncTelemetry,4000);syncTelemetry();
+</script>
+</body>
+</html>"""
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui():
-    """Serve the War Room UI directly — no StaticFiles, no path resolution issues."""
-    if _UI_PATH.exists():
-        return HTMLResponse(content=_UI_PATH.read_text())
-    return HTMLResponse(content="<h1>UI not found</h1><p>Expected: " + str(_UI_PATH) + "</p>", status_code=404)
+    return HTMLResponse(content=WAR_ROOM_HTML)
 
 
 # ─────────────────────────── Entry Point ───────────────────────────

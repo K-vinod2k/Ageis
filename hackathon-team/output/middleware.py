@@ -52,6 +52,15 @@ log = logging.getLogger("aegis-middleware")
 
 app = FastAPI(title="Aegis Middleware", description="Validia-gated webhook interceptor for CI/CD pipeline")
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # ─────────────────────────── Validia Scan ───────────────────────────
 

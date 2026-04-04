@@ -27,6 +27,7 @@ import httpx
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
 import os
@@ -51,6 +52,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("aegis-middleware")
 
 app = FastAPI(title="Aegis Middleware", description="Validia-gated webhook interceptor for CI/CD pipeline")
+
+# Allow Lightning AI's proxy iframe to load the UI without CORS errors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(

@@ -3,10 +3,10 @@ LangGraph StateGraph — The Loop of Absolute Security (v2: Meta-Cognitive Recur
 
 Updated pipeline with mandatory Evaluator oversight after every agent:
 
-  Single query:   Coordinator → Agent → Evaluator → (≥95) END
+  Single query:   Coordinator -> Agent -> Evaluator -> (≥95) END
                                               ↓ (<95)  Agent (with directive)
 
-  Full pipeline:  Coordinator → Builder → Evaluator → (≥95) Plumber → Evaluator → (≥95) Breaker → Evaluator → (≥95) Presenter → Evaluator → END
+  Full pipeline:  Coordinator -> Builder -> Evaluator -> (≥95) Plumber -> Evaluator -> (≥95) Breaker -> Evaluator -> (≥95) Presenter -> Evaluator -> END
                                                ↓ (<95)                      ↓ (<95)                      ↓ (<95)                       ↓ (<95)
                                             Builder                       Plumber                       Breaker                      Presenter
 
@@ -27,7 +27,7 @@ from agents.evaluator import run_evaluation
 from memory.store import get_checkpointer, get_thread_config
 
 
-# ─────────────────────────── State Definition ───────────────────────────
+# --------------------------- State Definition ---------------------------
 
 class TeamState(TypedDict):
     # User input
@@ -39,24 +39,24 @@ class TeamState(TypedDict):
     # Identifies which agent the Evaluator should review
     last_evaluated_agent: str
 
-    # ── Agent outputs ──
+    # -- Agent outputs --
     builder_output: str
     plumber_output: str
     breaker_verdict: str        # "PASS" | "FAIL"
     breaker_report: str
     final_output: str           # Presenter or single-agent output
 
-    # ── Evaluator state ──
+    # -- Evaluator state --
     evaluator_score: int                  # 0–100
     evaluator_report: dict                # full JSON report from evaluator
     correction_directive: str             # patch instruction for the next agent turn
     evaluation_history: Annotated[list[dict], operator.add]  # all past eval reports
 
-    # ── Loop control ──
+    # -- Loop control --
     patch_iterations: int   # total evaluator rejections; safety valve at 3
 
 
-# ─────────────────────────── Helper: inject directive ───────────────────────────
+# --------------------------- Helper: inject directive ---------------------------
 
 def _with_directive(task: str, state: TeamState) -> str:
     """Prepend correction directive to a task if one exists from the Evaluator."""
@@ -64,7 +64,7 @@ def _with_directive(task: str, state: TeamState) -> str:
     iteration = state.get("patch_iterations", 0)
     if directive and iteration > 0:
         return (
-            f"⚠️  EVALUATOR PATCH DIRECTIVE (iteration {iteration}):\n"
+            f"[WARN]  EVALUATOR PATCH DIRECTIVE (iteration {iteration}):\n"
             f"{directive}\n\n"
             f"{'=' * 60}\n"
             f"ORIGINAL TASK:\n{task}"
@@ -72,7 +72,7 @@ def _with_directive(task: str, state: TeamState) -> str:
     return task
 
 
-# ─────────────────────────── Coordinator ───────────────────────────
+# --------------------------- Coordinator ---------------------------
 
 def coordinator_node(state: TeamState) -> dict:
     """Route the message to the right agent (or 'all' for full pipeline)."""
@@ -87,7 +87,7 @@ def coordinator_node(state: TeamState) -> dict:
     }
 
 
-# ─────────────────────────── Specialist Agent Nodes ───────────────────────────
+# --------------------------- Specialist Agent Nodes ---------------------------
 
 def builder_node(state: TeamState) -> dict:
     agent = create_builder_agent()
@@ -221,7 +221,7 @@ def single_agent_node(state: TeamState) -> dict:
     }
 
 
-# ─────────────────────────── Evaluator Node ───────────────────────────
+# --------------------------- Evaluator Node ---------------------------
 
 def evaluator_node(state: TeamState) -> dict:
     """
@@ -275,7 +275,7 @@ def evaluator_node(state: TeamState) -> dict:
     new_iteration = iteration if approved else iteration + 1
 
     summary = (
-        f"Score: {score}/100 | {'✅ APPROVED' if approved else '❌ REJECTED — PATCH REQUIRED'}\n"
+        f"Score: {score}/100 | {'[OK] APPROVED' if approved else '❌ REJECTED — PATCH REQUIRED'}\n"
         f"Rationale: {report.get('evaluation_rationale', '')[:300]}"
     )
 
@@ -289,7 +289,7 @@ def evaluator_node(state: TeamState) -> dict:
     }
 
 
-# ─────────────────────────── Routing Functions ───────────────────────────
+# --------------------------- Routing Functions ---------------------------
 
 def route_after_coordinator(state: TeamState) -> Literal["single_agent", "builder"]:
     return "builder" if state["current_agent"] == "all" else "single_agent"
@@ -298,8 +298,8 @@ def route_after_coordinator(state: TeamState) -> Literal["single_agent", "builde
 def route_after_evaluator(state: TeamState) -> str:
     """
     Route based on evaluator score AND which agent was just evaluated.
-    Score >= 95 → proceed to next pipeline stage.
-    Score < 95  → retry the same agent with correction directive.
+    Score >= 95 -> proceed to next pipeline stage.
+    Score < 95  -> retry the same agent with correction directive.
     """
     score = state.get("evaluator_score", 0)
     agent = state.get("last_evaluated_agent", "")
@@ -325,7 +325,7 @@ def route_after_evaluator(state: TeamState) -> str:
         return retry_map.get(agent, END)
 
 
-# ─────────────────────────── Graph Assembly ───────────────────────────
+# --------------------------- Graph Assembly ---------------------------
 
 def build_graph():
     graph = StateGraph(TeamState)
@@ -342,7 +342,7 @@ def build_graph():
     # Entry point
     graph.set_entry_point("coordinator")
 
-    # Coordinator → single agent OR full pipeline start
+    # Coordinator -> single agent OR full pipeline start
     graph.add_conditional_edges(
         "coordinator",
         route_after_coordinator,
@@ -353,7 +353,7 @@ def build_graph():
     for agent in ["single_agent", "builder", "plumber", "breaker", "presenter"]:
         graph.add_edge(agent, "evaluator")
 
-    # Evaluator routes: approve → next stage, reject → retry same agent
+    # Evaluator routes: approve -> next stage, reject -> retry same agent
     graph.add_conditional_edges(
         "evaluator",
         route_after_evaluator,
@@ -409,6 +409,6 @@ def run_team(user_input: str, session_id: str) -> dict:
     except Exception as e:
         if "recursion" in str(e).lower():
             # Return whatever partial state we have with a circuit breaker flag
-            initial_state["final_output"] = "⚠️ CIRCUIT BREAKER: Patch loop limit reached. System halted for human review."
+            initial_state["final_output"] = "[WARN] CIRCUIT BREAKER: Patch loop limit reached. System halted for human review."
             initial_state["correction_directive"] = "Recursion limit hit — manual intervention required."
         raise

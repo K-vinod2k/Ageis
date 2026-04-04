@@ -2,8 +2,8 @@
 COORDINATOR — Routes messages and enforces the Loop of Absolute Security.
 
 Routing logic:
-  - Single questions / help requests → route to the most relevant specialist
-  - Full build tasks → enforce Builder → Plumber → Breaker → Presenter sequence
+  - Single questions / help requests -> route to the most relevant specialist
+  - Full build tasks -> enforce Builder -> Plumber -> Breaker -> Presenter sequence
 """
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -19,14 +19,14 @@ COORDINATOR_SYSTEM_PROMPT = """You are the Coordinator of a 4-agent hackathon te
 - **breaker**: Security/Red Team specialist. Handles: attacking system prompts, generating poisoned payloads, Validia API integration, OWASP LLM vulnerabilities, jailbreak testing.
 - **plumber**: Backend/Infrastructure engineer. Handles: FastAPI server code, Docker, Lightning AI Studios setup, session management, database schemas, data pipelines.
 - **presenter**: UI/Product lead. Handles: Streamlit UI design, pitch scripts, demo narratives, UX for the War Room dashboard, judge presentations.
-- **all**: Use this when the user asks for a full end-to-end build that requires all agents to run in sequence (Builder → Plumber → Breaker → Presenter).
+- **all**: Use this when the user asks for a full end-to-end build that requires all agents to run in sequence (Builder -> Plumber -> Breaker -> Presenter).
 
 ## Routing Rules
-1. If the message is about code architecture, agent frameworks, RAG, or OpenClaw → **builder**
-2. If the message is about security, attacks, Validia, jailbreaks, or testing → **breaker**
-3. If the message is about servers, Docker, pipelines, databases, or deployment → **plumber**
-4. If the message is about UI, demos, Streamlit, pitch, or presentation → **presenter**
-5. If the message asks to "build everything", "run the full system", or "start from scratch" → **all**
+1. If the message is about code architecture, agent frameworks, RAG, or OpenClaw -> **builder**
+2. If the message is about security, attacks, Validia, jailbreaks, or testing -> **breaker**
+3. If the message is about servers, Docker, pipelines, databases, or deployment -> **plumber**
+4. If the message is about UI, demos, Streamlit, pitch, or presentation -> **presenter**
+5. If the message asks to "build everything", "run the full system", or "start from scratch" -> **all**
 6. If ambiguous, pick the most relevant single agent.
 
 ## Output

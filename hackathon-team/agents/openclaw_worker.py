@@ -3,7 +3,7 @@ import json
 import logging
 from fastapi import FastAPI, Request, HTTPException
 
-# ─────────────────────────── Config ───────────────────────────
+# --------------------------- Config ---------------------------
 WORKER_PORT = int(os.getenv("OPENCLAW_WORKER_PORT", "18789"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -11,7 +11,7 @@ log = logging.getLogger("openclaw-worker")
 
 app = FastAPI(title="OpenClaw CI/CD Worker", description="Zero-Trust CI/CD agent.")
 
-# ─────────────────────────── Deployment Endpoint ───────────────────────────
+# --------------------------- Deployment Endpoint ---------------------------
 
 @app.post("/")
 async def receive_clean_payload(request: Request):
@@ -28,10 +28,10 @@ async def receive_clean_payload(request: Request):
     pr_number = body.get("pull_request", {}).get("number", "unknown")
     pr_title = body.get("pull_request", {}).get("title", "No Title")
     
-    log.info(f"🟢 [OpenClaw] Received Validia-cleared payload for PR #{pr_number}")
-    log.info(f"🟢 [OpenClaw] Parsing architecture instructions from: '{pr_title}'")
+    log.info(f"[PASS] [OpenClaw] Received Validia-cleared payload for PR #{pr_number}")
+    log.info(f"[PASS] [OpenClaw] Parsing architecture instructions from: '{pr_title}'")
     
-    # ── Simulate CI/CD Agent Execution ──
+    # -- Simulate CI/CD Agent Execution --
     # In reality, this is where OpenClaw would use LLM to review the PR,
     # generate tests, or perform automated deployments.
     
@@ -44,5 +44,5 @@ async def receive_clean_payload(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    print(f"🚀 OpenClaw Agent Worker starting on port {WORKER_PORT}...")
+    print(f"[DEPLOY] OpenClaw Agent Worker starting on port {WORKER_PORT}...")
     uvicorn.run(app, host="0.0.0.0", port=WORKER_PORT)

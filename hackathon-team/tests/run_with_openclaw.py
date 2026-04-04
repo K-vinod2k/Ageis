@@ -21,7 +21,7 @@ import httpx
 from datetime import datetime
 from pathlib import Path
 
-# ── Config ──────────────────────────────────────────────────────────────────
+# -- Config ------------------------------------------------------------------
 OPENCLAW_GATEWAY = os.getenv("OPENCLAW_GATEWAY", "http://127.0.0.1:18789")
 LIGHTNING_API_KEY = os.getenv("LIGHTNING_API_KEY", "")
 AEGIS_TEST_URL = os.getenv("AEGIS_TEST_URL", "http://localhost:8080")
@@ -33,7 +33,7 @@ HEADERS = {
     "Authorization": f"Bearer {LIGHTNING_API_KEY}" if LIGHTNING_API_KEY else "",
 }
 
-# ── Agent Task Prompt ────────────────────────────────────────────────────────
+# -- Agent Task Prompt --------------------------------------------------------
 AGENT_TASK = f"""
 You are running the Aegis Zero-Trust Security Test Suite on a Lightning AI studio.
 The Aegis middleware is expected to be running at: {AEGIS_TEST_URL}
@@ -117,7 +117,7 @@ After writing the JSON, print a human-readable summary:
 Do not stop until all 7 steps are complete. Do not ask for confirmation. Execute autonomously.
 """
 
-# ── Dispatch to OpenClaw ─────────────────────────────────────────────────────
+# -- Dispatch to OpenClaw -----------------------------------------------------
 
 def dispatch_to_openclaw():
     print("=" * 60)

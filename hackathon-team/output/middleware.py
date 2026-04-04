@@ -9,7 +9,7 @@ This is the CI/CD Poisoned Pull Request demo:
   - Attacker submits a PR with an injected AWS key exfiltration payload in the PR description
   - The webhook fires, payload arrives at this middleware
   - Validia intercepts BEFORE OpenClaw ever sees it
-  - War Room shows: 🛡️ CI/CD PAYLOAD INTERCEPTED
+  - War Room shows: [AEGIS] CI/CD PAYLOAD INTERCEPTED
 
 Set environment variables:
   OPENCLAW_URL         = https://18789-YOUR_SUBDOMAIN.cloudspaces.litng.ai
@@ -36,7 +36,7 @@ from pathlib import Path
 import uuid
 import traceback
 
-# ─────────────────────────── Config ───────────────────────────
+# --------------------------- Config ---------------------------
 
 OPENCLAW_URL = os.getenv("OPENCLAW_URL", "")
 LIGHTNING_GATEWAY_KEY = os.getenv("LIGHTNING_GATEWAY_KEY", "")
@@ -62,7 +62,7 @@ app.add_middleware(
 )
 
 
-# ─────────────────────────── Validia Scan ───────────────────────────
+# --------------------------- Validia Scan ---------------------------
 
 async def validia_scan(text: str, scan_type: str = "input") -> dict:
     """
@@ -157,7 +157,7 @@ async def scan_all_string_fields(payload: dict) -> tuple[bool, str, float]:
     return False, "Clean", max_score
 
 
-# ─────────────────────────── Hazmat Suit Transformation ───────────────────────────
+# --------------------------- Hazmat Suit Transformation ---------------------------
 
 def apply_hazmat_suit(payload: dict, is_blocked: bool, reason: str, threat_score: float) -> dict:
     """
@@ -205,7 +205,7 @@ def apply_hazmat_suit(payload: dict, is_blocked: bool, reason: str, threat_score
     return safe
 
 
-# ─────────────────────────── Forward to OpenClaw ───────────────────────────
+# --------------------------- Forward to OpenClaw ---------------------------
 
 async def forward_to_openclaw(payload: dict) -> dict:
     """Forward the Validia-cleared payload to the OpenClaw public URL."""
@@ -226,7 +226,7 @@ async def forward_to_openclaw(payload: dict) -> dict:
         return {"status": r.status_code, "response": r.text[:500]}
 
 
-# ─────────────────────────── Webhook Endpoint ───────────────────────────
+# --------------------------- Webhook Endpoint ---------------------------
 
 @app.post("/webhook/github")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -235,10 +235,10 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 
     Demo flow:
       1. Attacker submits poisoned PR (AWS key exfiltration in PR body)
-      2. GitHub fires webhook → hits this endpoint
+      2. GitHub fires webhook -> hits this endpoint
       3. Validia scans ALL string fields (including PR body, commit messages)
-      4. If UNSAFE → 403 + War Room alert
-      5. If SAFE → forward to OpenClaw for analysis
+      4. If UNSAFE -> 403 + War Room alert
+      5. If SAFE -> forward to OpenClaw for analysis
     """
     ts = datetime.now().strftime("%H:%M:%S")
 
@@ -254,7 +254,7 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
 
     log.info(f"[{ts}] Webhook received — Repo: {repo} | PR #{pr_number}: {pr_title}")
 
-    # ── VALIDIA SCAN — scan every string field ──
+    # -- VALIDIA SCAN — scan every string field --
     is_blocked, reason, threat_score = await scan_all_string_fields(body)
 
     event = {
@@ -268,13 +268,13 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     }
     intercepted_events.append(event)
 
-    # ── HAZMAT SUIT — transform payload before any forwarding ──
+    # -- HAZMAT SUIT — transform payload before any forwarding --
     # Blocked: strip executable threat, preserve metadata for OpenClaw analysis
     # Clean: tag as VALIDIA_CLEARED so OpenClaw knows it was checked
     safe_body = apply_hazmat_suit(body, is_blocked, reason, threat_score)
 
     if is_blocked:
-        log.warning(f"[{ts}] 🛡️ HAZMAT CONTAINED — PR #{pr_number} | Score: {threat_score:.3f} | {reason}")
+        log.warning(f"[{ts}] [AEGIS] HAZMAT CONTAINED — PR #{pr_number} | Score: {threat_score:.3f} | {reason}")
         # Forward the SANITIZED payload to OpenClaw so it can analyze the attack structure
         background_tasks.add_task(forward_to_openclaw, safe_body)
         return JSONResponse(
@@ -291,8 +291,8 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
             }
         )
 
-    # ── CLEAN — forward with VALIDIA_CLEARED tag ──
-    log.info(f"[{ts}] ✅ CLEAN — PR #{pr_number} | Score: {threat_score:.3f} | Forwarding to OpenClaw")
+    # -- CLEAN — forward with VALIDIA_CLEARED tag --
+    log.info(f"[{ts}] [OK] CLEAN — PR #{pr_number} | Score: {threat_score:.3f} | Forwarding to OpenClaw")
     background_tasks.add_task(forward_to_openclaw, safe_body)
 
     return JSONResponse(
@@ -329,7 +329,7 @@ async def generic_webhook(request: Request, background_tasks: BackgroundTasks):
     return JSONResponse(status_code=200, content={"status": "FORWARDED", "score": threat_score})
 
 
-# ─────────────────────────── War Room Telemetry ───────────────────────────
+# --------------------------- War Room Telemetry ---------------------------
 
 @app.get("/telemetry")
 async def get_telemetry():
@@ -352,7 +352,7 @@ async def health():
     }
 
 
-# ─────────────────────────── Multi-Agent Graph API ───────────────────────────
+# --------------------------- Multi-Agent Graph API ---------------------------
 
 class ChatRequest(BaseModel):
     message: str
@@ -415,7 +415,7 @@ async def api_chat(req: ChatRequest):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# ─────────────────────────── Demo: Poisoned PR Payload ───────────────────────────
+# --------------------------- Demo: Poisoned PR Payload ---------------------------
 
 DEMO_POISONED_PR = {
     "action": "opened",
@@ -464,7 +464,7 @@ async def demo_clean():
     return DEMO_CLEAN_PR
 
 
-# ─────────────────────────── War Room UI (inline — no file path dependency) ───────────────────────────
+# --------------------------- War Room UI (inline — no file path dependency) ---------------------------
 
 WAR_ROOM_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -652,7 +652,7 @@ async def serve_ui():
     return HTMLResponse(content=WAR_ROOM_HTML)
 
 
-# ─────────────────────────── Entry Point ───────────────────────────
+# --------------------------- Entry Point ---------------------------
 
 if __name__ == "__main__":
     import uvicorn

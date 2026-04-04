@@ -29,25 +29,25 @@ The agent's job is to read malicious data. This creates a paradox:
 an LLM told to analyze a jailbreak payload often gets jailbroken itself.
 
 Validia solves this as the "Hazmat Suit":
-- BEFORE OpenClaw ingests a threat log → Validia scans it
+- BEFORE OpenClaw ingests a threat log -> Validia scans it
 - If Validia detects an active exploit (DAN, distillation, injection):
-  → It flags the payload as <SANITIZED_THREAT_DETECTED>
-  → It strips the executable portion of the attack
-  → It PRESERVES the structural metadata (attack type, encoding, target field)
-  → OpenClaw receives: safe metadata + Validia's threat classification
-  → OpenClaw can analyze HOW the attack was structured without being infected
+  -> It flags the payload as <SANITIZED_THREAT_DETECTED>
+  -> It strips the executable portion of the attack
+  -> It PRESERVES the structural metadata (attack type, encoding, target field)
+  -> OpenClaw receives: safe metadata + Validia's threat classification
+  -> OpenClaw can analyze HOW the attack was structured without being infected
 
 This is not a chatbot with a safety filter.
 This is a professional threat intelligence tool with a Hazmat containment layer.
 
 ## THE PIPELINE (what the Plumber must build)
 [Wireless Edge Log drops into /threat_logs/]
-    → FastAPI watcher detects new file
-    → Validia Hazmat Scan (strip active exploit, preserve metadata)
-    → OpenClaw Agent reads sanitized log + queries RAG (Known Threat Signatures)
-    → Agent drafts: Threat Classification + Reverse-Engineer Report + Mitigation Code
-    → Validia Output Scan (ensure no data leakage in the report)
-    → Report saved to /threat_reports/ + displayed in War Room
+    -> FastAPI watcher detects new file
+    -> Validia Hazmat Scan (strip active exploit, preserve metadata)
+    -> OpenClaw Agent reads sanitized log + queries RAG (Known Threat Signatures)
+    -> Agent drafts: Threat Classification + Reverse-Engineer Report + Mitigation Code
+    -> Validia Output Scan (ensure no data leakage in the report)
+    -> Report saved to /threat_reports/ + displayed in War Room
 
 ## THE RAG CONTEXT (what the Builder must implement)
 Vinod's past threat reports live in /rag_data/threat_signatures.json.
@@ -59,14 +59,14 @@ The agent queries this via ChromaDB embeddings to:
 ## THE WAR ROOM UI (what the Presenter must build)
 Two-panel layout:
 LEFT:  "Vinod's Workflow Automated"
-       → Live feed of incoming threat logs being processed
-       → Draft threat report being written by the agent
-       → RAG matches from Known Threat Signatures
+       -> Live feed of incoming threat logs being processed
+       -> Draft threat report being written by the agent
+       -> RAG matches from Known Threat Signatures
 
 RIGHT: "The Hazmat Suit"
-       → Validia scan results for each log
-       → <SANITIZED_THREAT_DETECTED> alerts with exploit type
-       → Attack Interception Log with payload metadata
+       -> Validia scan results for each log
+       -> <SANITIZED_THREAT_DETECTED> alerts with exploit type
+       -> Attack Interception Log with payload metadata
 
 ## THE PITCH (what Vinod says to judges)
 "The prompt asked for an agent that automates how I work. I am an AI

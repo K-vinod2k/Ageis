@@ -10,7 +10,7 @@ const colorMap = {
     "evaluator": "#e8b04b", "system": "#8b949e"
 };
 const iconMap = {
-    "user": "👤", "coordinator": "🎯", "builder": "🏗️", "breaker": "🔴",
+    "user": "👤", "coordinator": "🎯", "builder": "🏗️", "breaker": "[FAIL]",
     "plumber": "🔧", "presenter": "📊", "evaluator": "🧠", "system": "⚙️"
 };
 
@@ -63,14 +63,14 @@ async function sendMission() {
             });
             
             if (data.verdict === "PASS") {
-                appendInterceptLog('info', '✅ SYSTEM HELD', `Breaker failed. Pipeline secured after ${data.iterations} loops.`);
+                appendInterceptLog('info', '[OK] SYSTEM HELD', `Breaker failed. Pipeline secured after ${data.iterations} loops.`);
             } else {
-                appendInterceptLog('blocked', '🚨 SYSTEM BREACHED', `Vulnerabilities persist after ${data.iterations} loops.`);
+                appendInterceptLog('blocked', '[ALERT] SYSTEM BREACHED', `Vulnerabilities persist after ${data.iterations} loops.`);
             }
 
         } else {
             appendAgentLog("system", `System Error: ${data.error}`);
-            appendInterceptLog('blocked', '⚠️ ERROR', data.error);
+            appendInterceptLog('blocked', '[WARN] ERROR', data.error);
         }
     } catch (err) {
         appendAgentLog("system", `Network Error: ${err.message}`);
@@ -150,7 +150,7 @@ async function fetchTelemetry() {
                 let isBlocked = ev.blocked;
                 appendInterceptLog(
                     isBlocked ? 'blocked' : 'info', 
-                    isBlocked ? '🛡️ THREAT BLOCKED' : '✅ PAYLOAD FORWARDED', 
+                    isBlocked ? '[AEGIS] THREAT BLOCKED' : '[OK] PAYLOAD FORWARDED', 
                     `Score: ${ev.threat_score} | ${ev.reason || ''}`
                 );
             });

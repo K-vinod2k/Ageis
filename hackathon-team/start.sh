@@ -15,10 +15,10 @@ echo ""
 # Install deps silently if needed
 uv pip install -r requirements.txt -q 2>/dev/null || pip install -r requirements.txt -q
 
-echo "  War Room UI  → open port 8080 in Lightning AI"
-echo "  Webhook Demo → POST /webhook/github"
-echo "  Clean demo   → GET  /demo/clean-pr"
-echo "  Poisoned demo→ GET  /demo/poisoned-pr"
+echo "  War Room UI  -> open port 8080 in Lightning AI"
+echo "  Webhook Demo -> POST /webhook/github"
+echo "  Clean demo   -> GET  /demo/clean-pr"
+echo "  Poisoned demo-> GET  /demo/poisoned-pr"
 echo ""
 
 uv run python -m uvicorn output.middleware:app \

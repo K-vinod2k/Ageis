@@ -107,7 +107,7 @@ def query_threat_signatures(query: str, k: int = 3) -> str:
         for i, doc in enumerate(results, 1):
             output += f"[Match {i}] {doc.metadata.get('name', 'Unknown')}\n"
             output += f"Severity: {doc.metadata.get('severity', 'UNKNOWN')}\n"
-            output += f"{doc.page_content}\n\n{'─' * 40}\n\n"
+            output += f"{doc.page_content}\n\n{'-' * 40}\n\n"
         return output.strip()
 
     except Exception as e:

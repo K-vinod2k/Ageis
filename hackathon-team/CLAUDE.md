@@ -37,9 +37,9 @@ asyncio.run(scan_all_string_fields(DEMO_POISONED_PR))
 ```bash
 cp .env.example .env
 # Fill in ONE of:
-#   LLM_PROVIDER=lightning  → LIGHTNING_GATEWAY_KEY + OPENCLAW_URL (from Lightning AI Studio)
-#   LLM_PROVIDER=openai     → OPENAI_API_KEY
-#   LLM_PROVIDER=anthropic  → ANTHROPIC_API_KEY
+#   LLM_PROVIDER=lightning  -> LIGHTNING_GATEWAY_KEY + OPENCLAW_URL (from Lightning AI Studio)
+#   LLM_PROVIDER=openai     -> OPENAI_API_KEY
+#   LLM_PROVIDER=anthropic  -> ANTHROPIC_API_KEY
 ```
 
 On Lightning AI Studios: set `LLM_PROVIDER=lightning` — no OpenAI/Anthropic keys needed. LLM calls are proxied natively through the gateway key.
@@ -49,10 +49,10 @@ On Lightning AI Studios: set `LLM_PROVIDER=lightning` — no OpenAI/Anthropic ke
 ### Agent Pipeline (Loop of Absolute Security)
 
 ```
-User Input → Coordinator → [single agent] or [full pipeline]
+User Input -> Coordinator -> [single agent] or [full pipeline]
 
 Full pipeline:
-Builder → Evaluator → Plumber → Evaluator → Breaker → Evaluator → Presenter → Evaluator → END
+Builder -> Evaluator -> Plumber -> Evaluator -> Breaker -> Evaluator -> Presenter -> Evaluator -> END
               ↓ (<95)              ↓ (<95)              ↓ (<95)               ↓ (<95)
            Builder              Plumber               Breaker              Presenter
 ```

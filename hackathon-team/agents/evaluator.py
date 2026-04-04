@@ -67,7 +67,7 @@ The single most critical change that would move the score above 95.
 
 ### FOR THE PLUMBER
 - **Accuracy (30pts)**: Is Validia a mandatory blocking step before OpenClaw runs? Not optional, not parallelized.
-- **Security (40pts)**: Cryptographic session UUIDs? Pipeline order enforced: Gateway → Validia In → OpenClaw → Validia Out → Response?
+- **Security (40pts)**: Cryptographic session UUIDs? Pipeline order enforced: Gateway -> Validia In -> OpenClaw -> Validia Out -> Response?
 - **Efficiency (30pts)**: All I/O async? Telemetry hooks connected to UI metrics?
 
 ### FOR THE BREAKER

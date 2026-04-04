@@ -1,104 +1,332 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aegis | Zero-Trust War Room</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEGIS — Zero-Trust War Room</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0e17;color:#c9d1d9;min-height:100vh;overflow-x:hidden}
+code,pre,.mono{font-family:ui-monospace,monospace}
+
+/* Banner */
+.banner{background:linear-gradient(90deg,#161b22,#0d1117);border-bottom:1px solid #e94560;padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+.banner-title{font-weight:900;font-size:18px;letter-spacing:2px;text-transform:uppercase}
+.banner-right{display:flex;align-items:center;gap:16px}
+.session-id{font-size:12px;color:#8b949e;font-family:ui-monospace,monospace}
+.live-badge{background:rgba(233,69,96,.15);border:1px solid #e94560;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#e94560;display:flex;align-items:center;gap:6px;letter-spacing:1px}
+.pulse{width:7px;height:7px;border-radius:50%;background:#e94560;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(233,69,96,.7)}70%{box-shadow:0 0 0 6px transparent}}
+
+/* Layout */
+.container{padding:20px 28px;max-width:1600px;margin:0 auto}
+
+/* Metrics */
+.telemetry{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.metric-card{background:rgba(22,27,34,.7);border:1px solid rgba(48,54,61,.7);border-radius:10px;padding:18px;text-align:center;cursor:default;transition:border .2s}
+.metric-card:hover{border-color:#58a6ff}
+.metric-value{font-family:ui-monospace,monospace;font-size:34px;font-weight:700}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#8b949e;margin-top:6px}
+.red{color:#f85149}.green{color:#3fb950}.amber{color:#d29922}.blue{color:#58a6ff}
+
+/* Main grid */
+.main-grid{display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px}
+.panel{background:rgba(22,27,34,.7);border:1px solid rgba(48,54,61,.7);border-radius:10px;padding:18px}
+.section-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8b949e;border-bottom:1px solid rgba(48,54,61,.5);padding-bottom:10px;margin-bottom:14px}
+.right-column{display:flex;flex-direction:column;gap:20px}
+
+/* Agent feed */
+.log-container{max-height:480px;overflow-y:auto;padding-right:6px}
+.log-container::-webkit-scrollbar{width:4px}
+.log-container::-webkit-scrollbar-thumb{background:rgba(48,54,61,.8);border-radius:2px}
+.empty-state{text-align:center;color:#8b949e;padding:40px;font-style:italic}
+.agent-card{background:rgba(13,17,23,.9);border:1px solid rgba(48,54,61,.5);border-radius:8px;padding:14px;margin-bottom:10px;animation:slideUp .3s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.agent-card-header{display:flex;justify-content:space-between;margin-bottom:8px}
+.agent-card-title{font-weight:700;font-size:12px;letter-spacing:1px}
+.agent-card-time{font-family:ui-monospace,monospace;font-size:10px;color:#8b949e}
+.agent-card-content{font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+
+/* Hazmat log */
+.intercept-log{max-height:260px;overflow-y:auto}
+.log-entry{font-family:ui-monospace,monospace;font-size:11px;padding:10px;border-left:3px solid;background:rgba(0,0,0,.2);margin-bottom:8px;border-radius:0 6px 6px 0;animation:flash .8s ease-out}
+@keyframes flash{0%{background:rgba(248,81,73,.25)}100%{background:rgba(0,0,0,.2)}}
+.log-blocked{border-left-color:#f85149;background:rgba(248,81,73,.05)}
+.log-info{border-left-color:#58a6ff}
+.log-clean{border-left-color:#3fb950}
+.log-label-blocked{color:#f85149;font-weight:700}
+.log-label-info{color:#58a6ff;font-weight:700}
+.log-label-clean{color:#3fb950;font-weight:700}
+.log-time{color:#8b949e;font-size:10px}
+
+/* Roster */
+.roster-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(48,54,61,.3)}
+.roster-item:last-child{border-bottom:none}
+.agent-role{font-size:10px;color:#8b949e;margin-top:2px}
+.badge{font-family:ui-monospace,monospace;font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(139,148,158,.15);color:#8b949e;transition:all .3s}
+.badge-active{background:rgba(88,166,255,.2);color:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,.3)}
+.badge-attacking{background:rgba(248,81,73,.2);color:#f85149;box-shadow:0 0 8px rgba(248,81,73,.3);animation:pulse 1s infinite}
+
+/* Input */
+.chat-area{background:rgba(22,27,34,.7);border:1px solid rgba(48,54,61,.7);border-radius:10px;padding:16px 20px}
+.input-row{display:flex;gap:10px;margin-top:10px}
+input[type=text]{flex:1;background:#0d1117;border:1px solid rgba(48,54,61,.7);color:#c9d1d9;padding:13px 16px;border-radius:8px;font-family:ui-monospace,monospace;font-size:13px;outline:none;transition:border .2s}
+input[type=text]:focus{border-color:#58a6ff}
+.btn{background:linear-gradient(135deg,#1f6feb,#173873);border:1px solid #388bfd;color:#fff;font-weight:700;letter-spacing:1px;padding:0 22px;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:hover{filter:brightness(1.2);box-shadow:0 0 14px rgba(56,139,253,.4)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.loading{font-size:11px;color:#d29922;margin-top:8px;display:none}
+
+/* Evaluator highlight */
+.eval-box{padding:10px;background:rgba(232,176,75,.08);border-radius:6px;border:1px solid rgba(232,176,75,.3)}
+</style>
 </head>
 <body>
-    <div class="banner">
-        <div class="banner-title">⚔️ AEGIS — Zero-Trust Threat Analyst <span style="font-size: 0.6em; opacity: 0.8; margin-left: 15px;">Powered by <a href="https://secure.validia.ai/" target="_blank" style="color: #58a6ff; text-decoration: none; border-bottom: 1px dotted #58a6ff;">Validia Secure</a></span></div>
-        <div class="banner-right">
-            <span class="session-id" id="sessionIdDisplay">SESSION: INIT</span>
-            <div class="live-badge"><span class="pulse-dot"></span> LIVE</div>
-        </div>
+
+<div class="banner">
+  <div class="banner-title">⚔️ AEGIS — Zero-Trust Threat Analyst
+    <span style="font-size:.55em;opacity:.7;margin-left:14px;font-weight:400;letter-spacing:0">
+      Powered by <a href="https://secure.validia.ai/" target="_blank" style="color:#58a6ff;text-decoration:none">Validia Secure</a>
+    </span>
+  </div>
+  <div class="banner-right">
+    <span class="session-id mono" id="sessionDisplay">SESSION: INIT</span>
+    <div class="live-badge"><span class="pulse"></span> LIVE</div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Metrics -->
+  <div class="telemetry">
+    <div class="metric-card">
+      <div class="metric-value red" id="m-blocked">0</div>
+      <div class="metric-label">🛡️ Threats Blocked</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value amber" id="m-loops">0</div>
+      <div class="metric-label">🔄 Patch Loops</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value blue" id="m-agents">0</div>
+      <div class="metric-label">🤖 Agents Deployed</div>
+    </div>
+    <div class="metric-card" onclick="syncTelemetry()" title="Click to sync">
+      <div class="metric-value green" id="m-clean">0</div>
+      <div class="metric-label">✅ Clean Inputs</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Agent Feed -->
+    <div class="panel">
+      <div class="section-header">🔬 Vinod's Workflow — Threat Analysis Feed</div>
+      <div id="agentFeed" class="log-container">
+        <div class="empty-state">No activity yet. Send a directive below to engage the pipeline.</div>
+      </div>
     </div>
 
-    <div class="container">
-        <!-- Telemetry Cards -->
-        <div class="telemetry">
-            <div class="metric-card">
-                <div class="metric-value metric-red" id="metric-blocked">0</div>
-                <div class="metric-label">🛡️ Threats Blocked</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value metric-amber" id="metric-loops">0</div>
-                <div class="metric-label">🔄 Patch Loops</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value metric-blue" id="metric-agents">0</div>
-                <div class="metric-label">🤖 Agents Deployed</div>
-            </div>
-            <div class="metric-card" onclick="fetchTelemetry()" style="cursor: pointer;" title="Refresh Telemetry">
-                <div class="metric-value metric-green" id="metric-clean">0</div>
-                <div class="metric-label">✅ Clean Inputs (Click to sync)</div>
-            </div>
+    <!-- Right column -->
+    <div class="right-column">
+      <div class="panel">
+        <div class="section-header">☣️ Hazmat Suit — Validia Containment Layer</div>
+        <div id="hazmatLog" class="intercept-log">
+          <div class="log-entry log-info">
+            <span class="log-time">STANDBY</span><br>
+            <span class="log-label-info">☣️ HAZMAT SUIT ACTIVE</span><br>
+            Monitoring /webhook/github for payloads…
+          </div>
         </div>
+      </div>
 
-        <div class="main-grid">
-            <!-- Left: Agent Activity Feed -->
-            <div class="panel agent-feed">
-                <div class="section-header">🔬 Vinod's Workflow Automated — Threat Analysis Feed</div>
-                <div id="agentLogContainer" class="log-container">
-                    <div class="empty-state">No agent activity yet. Send a directive below to begin absolute security patching.</div>
-                </div>
-            </div>
-
-            <!-- Right: Hazmat Suit Log & Roster -->
-            <div class="right-column">
-                <div class="panel">
-                    <div class="section-header">☣️ Hazmat Suit — Validia Containment Layer</div>
-                    <div id="interceptLogContainer" class="intercept-log">
-                        <div class="log-entry log-info">
-                            <span class="log-time">STANDBY</span><br>
-                            <span class="log-label-info">☣️ HAZMAT SUIT ACTIVE</span><br>
-                            Validia containment layer online via FastAPI.<br>
-                            Monitoring /webhook/github for incoming wireless payloads...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel agent-roster">
-                    <div class="section-header">🤖 Agent Roster</div>
-                    <div class="roster-list">
-                        <div class="roster-item" id="roster-builder">
-                            <div><span class="agent-icon" style="color: #58a6ff;">🏗️</span> <strong style="color: #58a6ff;">BUILDER</strong><br><span class="agent-role">Cognitive Architect</span></div>
-                            <span class="status-badge" id="badge-builder">IDLE</span>
-                        </div>
-                        <div class="roster-item" id="roster-breaker">
-                            <div><span class="agent-icon" style="color: #f85149;">🔴</span> <strong style="color: #f85149;">BREAKER</strong><br><span class="agent-role">Adversarial Payload</span></div>
-                            <span class="status-badge" id="badge-breaker">IDLE</span>
-                        </div>
-                        <div class="roster-item" id="roster-plumber">
-                            <div><span class="agent-icon" style="color: #3fb950;">🔧</span> <strong style="color: #3fb950;">PLUMBER</strong><br><span class="agent-role">Zero-Trust Config</span></div>
-                            <span class="status-badge" id="badge-plumber">IDLE</span>
-                        </div>
-                        <div class="roster-item" id="roster-presenter">
-                            <div><span class="agent-icon" style="color: #bc8cff;">📊</span> <strong style="color: #bc8cff;">PRESENTER</strong><br><span class="agent-role">Threat Intel</span></div>
-                            <span class="status-badge" id="badge-presenter">IDLE</span>
-                        </div>
-                        <div class="roster-item" id="roster-evaluator">
-                            <div><span class="agent-icon" style="color: #e8b04b;">🧠</span> <strong style="color: #e8b04b;">EVALUATOR</strong><br><span class="agent-role">Quality Oracle</span></div>
-                            <span class="status-badge" id="badge-evaluator">IDLE</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div class="panel">
+        <div class="section-header">🤖 Agent Roster</div>
+        <div>
+          <div class="roster-item">
+            <div><span style="color:#58a6ff">🏗️ <strong>BUILDER</strong></span><div class="agent-role">Cognitive Architect</div></div>
+            <span class="badge" id="b-builder">IDLE</span>
+          </div>
+          <div class="roster-item">
+            <div><span style="color:#f85149">🔴 <strong>BREAKER</strong></span><div class="agent-role">Adversarial Payload</div></div>
+            <span class="badge" id="b-breaker">IDLE</span>
+          </div>
+          <div class="roster-item">
+            <div><span style="color:#3fb950">🔧 <strong>PLUMBER</strong></span><div class="agent-role">Zero-Trust Config</div></div>
+            <span class="badge" id="b-plumber">IDLE</span>
+          </div>
+          <div class="roster-item">
+            <div><span style="color:#bc8cff">📊 <strong>PRESENTER</strong></span><div class="agent-role">Threat Intel</div></div>
+            <span class="badge" id="b-presenter">IDLE</span>
+          </div>
+          <div class="roster-item">
+            <div><span style="color:#e8b04b">🧠 <strong>EVALUATOR</strong></span><div class="agent-role">Quality Oracle</div></div>
+            <span class="badge" id="b-evaluator">IDLE</span>
+          </div>
         </div>
-
-        <!-- Chat Input -->
-        <div class="chat-area">
-            <div class="section-header" style="border: none; margin-bottom: 5px;">⌨️ Command Input</div>
-            <div class="input-wrapper">
-                <input type="text" id="chatInput" placeholder="Type your mission directive to the team... (e.g. 'Deploy User Auth module')">
-                <button id="sendBtn" class="premium-button">EXECUTE</button>
-            </div>
-            <div id="loadingIndicator" class="loading-indicator">🔄 Agents executing... Loop of Absolute Security engaged</div>
-        </div>
+      </div>
     </div>
+  </div>
 
-    <script src="/app.js"></script>
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="section-header" style="border:none;margin-bottom:4px">⌨️ Mission Directive</div>
+    <div class="input-row">
+      <input type="text" id="missionInput" placeholder="Type a directive… e.g. 'Deploy User Auth module'">
+      <button class="btn" id="execBtn" onclick="sendMission()">EXECUTE</button>
+    </div>
+    <div class="loading" id="loadingMsg">🔄 Agents executing… Loop of Absolute Security engaged</div>
+  </div>
+</div>
+
+<script>
+// ── Session ──
+const SESSION_ID = crypto.randomUUID();
+document.getElementById('sessionDisplay').textContent = 'SESSION: ' + SESSION_ID.slice(0,8).toUpperCase();
+
+// ── API base: same origin, works whether opened directly or via iframe ──
+const API = window.location.origin;
+
+// ── State ──
+let stats = {blocked:0, loops:0, agents:0, clean:0};
+
+const colorMap = {user:'#c9d1d9',coordinator:'#d29922',builder:'#58a6ff',breaker:'#f85149',plumber:'#3fb950',presenter:'#bc8cff',evaluator:'#e8b04b',system:'#8b949e'};
+const iconMap  = {user:'👤',coordinator:'🎯',builder:'🏗️',breaker:'🔴',plumber:'🔧',presenter:'📊',evaluator:'🧠',system:'⚙️'};
+
+// ── Send mission ──
+async function sendMission() {
+  const input = document.getElementById('missionInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.disabled = true;
+  document.getElementById('execBtn').disabled = true;
+  document.getElementById('loadingMsg').style.display = 'block';
+
+  addAgentCard('user', text);
+  setRoster('working');
+
+  try {
+    const res = await fetch(API + '/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: text, session_id: SESSION_ID})
+    });
+    const data = await res.json();
+
+    document.querySelectorAll('.empty-state').forEach(e => e.remove());
+
+    if (res.ok) {
+      stats.agents += data.messages.length;
+      stats.loops  += data.iterations || 0;
+      updateMetrics();
+
+      data.messages.forEach(m => addAgentCard(m.role, m.content));
+
+      if (data.verdict === 'PASS') {
+        addHazmat('clean','✅ SYSTEM HELD', `Pipeline secured after ${data.iterations} patch loop(s).`);
+      } else {
+        addHazmat('blocked','🚨 VULNERABILITY FOUND', `Breaker found gaps after ${data.iterations} loop(s).`);
+      }
+    } else {
+      addAgentCard('system', 'Error: ' + (data.error || 'Unknown'));
+    }
+  } catch(err) {
+    addAgentCard('system', 'Network error: ' + err.message + '\n\nMake sure the server is running on this origin.');
+  } finally {
+    input.disabled = false;
+    document.getElementById('execBtn').disabled = false;
+    document.getElementById('loadingMsg').style.display = 'none';
+    input.focus();
+    setRoster('idle');
+  }
+}
+
+document.getElementById('missionInput').addEventListener('keypress', e => { if(e.key==='Enter') sendMission(); });
+
+// ── Roster ──
+function setRoster(mode) {
+  ['builder','plumber','presenter','evaluator'].forEach(id => {
+    const el = document.getElementById('b-'+id);
+    if (mode === 'working') { el.className = 'badge badge-active'; el.textContent = 'WORKING'; }
+    else { el.className = 'badge'; el.textContent = 'IDLE'; }
+  });
+  const br = document.getElementById('b-breaker');
+  if (mode === 'working') { br.className = 'badge badge-attacking'; br.textContent = 'ATTACKING'; }
+  else { br.className = 'badge'; br.textContent = 'IDLE'; }
+}
+
+// ── Agent card ──
+function addAgentCard(role, content) {
+  const time = new Date().toLocaleTimeString('en-US',{hour12:false});
+  const col  = colorMap[role] || '#c9d1d9';
+  const icon = iconMap[role]  || '💬';
+
+  let body = esc(content);
+  if (role === 'evaluator' && content.includes('Score:')) {
+    body = `<div class="eval-box">${body}</div>`;
+  } else if (body.length > 900) {
+    body = body.substring(0,900) + '\n\n[TRUNCATED]';
+  }
+
+  const feed = document.getElementById('agentFeed');
+  feed.insertAdjacentHTML('beforeend', `
+    <div class="agent-card" style="border-color:${col}35">
+      <div class="agent-card-header">
+        <span class="agent-card-title" style="color:${col}">${icon} ${role.toUpperCase()}</span>
+        <span class="agent-card-time">${time}</span>
+      </div>
+      <div class="agent-card-content">${body}</div>
+    </div>`);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ── Hazmat log ──
+function addHazmat(type, label, detail) {
+  const time = new Date().toLocaleTimeString('en-US',{hour12:false});
+  document.getElementById('hazmatLog').insertAdjacentHTML('afterbegin', `
+    <div class="log-entry log-${type}">
+      <span class="log-time">${time}</span><br>
+      <span class="log-label-${type}">${label}</span><br>
+      ${esc(detail)}
+    </div>`);
+}
+
+// ── Telemetry sync ──
+async function syncTelemetry() {
+  try {
+    const data = await fetch(API + '/telemetry').then(r => r.json());
+    stats.blocked = data.blocked || 0;
+    stats.clean   = data.clean   || 0;
+    updateMetrics();
+
+    if (data.events && data.events.length) {
+      const log = document.getElementById('hazmatLog');
+      log.innerHTML = '';
+      [...data.events].reverse().forEach(ev => {
+        addHazmat(
+          ev.blocked ? 'blocked' : 'clean',
+          ev.blocked ? '🛡️ THREAT BLOCKED' : '✅ PAYLOAD FORWARDED',
+          `Score: ${ev.threat_score} | ${ev.reason || ''}`
+        );
+      });
+    }
+  } catch(_) {}
+}
+
+function updateMetrics() {
+  document.getElementById('m-blocked').textContent = stats.blocked;
+  document.getElementById('m-loops').textContent   = stats.loops;
+  document.getElementById('m-agents').textContent  = stats.agents;
+  document.getElementById('m-clean').textContent   = stats.clean;
+}
+
+function esc(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Auto-sync every 4s
+setInterval(syncTelemetry, 4000);
+syncTelemetry();
+</script>
 </body>
 </html>

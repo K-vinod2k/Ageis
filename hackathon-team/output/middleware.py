@@ -29,9 +29,11 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sys
+import os
+from pathlib import Path
 
-# Route to project root for graph import
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Robustly route to project root for graph import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from graph import run_team
 import uuid
 import traceback

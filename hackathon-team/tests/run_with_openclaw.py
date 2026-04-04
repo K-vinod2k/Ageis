@@ -121,65 +121,48 @@ Do not stop until all 7 steps are complete. Do not ask for confirmation. Execute
 
 def dispatch_to_openclaw():
     print("=" * 60)
-    print(" AEGIS — Running test suite via OpenClaw agent")
+    print(" AEGIS — Running full security test suite")
     print(f" Target: {AEGIS_TEST_URL}")
     print("=" * 60)
     print()
-
-    # Write the task to a temp file for the openclaw CLI to consume
-    task_file = Path("/tmp/aegis_test_task.md")
-    task_file.write_text(AGENT_TASK)
-
-    import subprocess, shutil
-
-    if shutil.which("openclaw"):
-        print("Found openclaw CLI — dispatching agent task...\n")
-        result = subprocess.run(
-            ["openclaw", "run", str(task_file)],
-            cwd=Path(__file__).parent.parent,
-            env={**os.environ, "AEGIS_TEST_URL": AEGIS_TEST_URL},
-            capture_output=False,
-        )
-        if result.returncode != 0:
-            print("\nopenclaw run exited non-zero — falling back to direct pytest")
-            fallback_run()
-    else:
-        print("openclaw CLI not found in PATH — running pytest directly\n")
-        fallback_run()
+    fallback_run()
 
 
 def fallback_run():
-    """Run pytest directly — produces same evidence files."""
+    """Run all three test layers and write evidence."""
     import subprocess
     env = os.environ.copy()
     env["AEGIS_TEST_URL"] = AEGIS_TEST_URL
     env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
 
     project_root = Path(__file__).parent.parent
-    print("Running unit tests...")
-    subprocess.run(
-        ["uv", "run", "pytest", "tests/unit/", "-v", "--tb=short"],
-        cwd=project_root, env=env
-    )
 
-    print("\nRunning integration tests...")
-    subprocess.run(
-        ["uv", "run", "pytest", "tests/integration/", "-v", "--tb=short"],
-        cwd=project_root, env=env
-    )
+    # Ensure test dependencies are installed
+    subprocess.run(["uv", "add", "pytest", "httpx", "--quiet"], cwd=project_root)
 
-    print("\nRunning L1-L4 security attack sequence...")
-    result = subprocess.run(
-        ["uv", "run", "pytest", "tests/security/", "-v", "--tb=short"],
-        cwd=project_root, env=env
-    )
+    layers = [
+        ("Unit Tests (scanner logic)",    ["tests/unit/"]),
+        ("Integration Tests (endpoints)", ["tests/integration/"]),
+        ("Security Tests (L1-L4 attacks)",["tests/security/"]),
+    ]
 
-    print("\nEvidence written to: tests/evidence/")
-    import glob
-    for f in sorted(glob.glob(str(project_root / "tests/evidence/*.json"))):
+    overall = 0
+    for label, paths in layers:
+        print(f"\n{'='*50}")
+        print(f" {label}")
+        print(f"{'='*50}")
+        r = subprocess.run(
+            ["uv", "run", "pytest"] + paths + ["-v", "--tb=short"],
+            cwd=project_root, env=env
+        )
+        overall = overall or r.returncode
+
+    print("\nEvidence files:")
+    for f in sorted((project_root / "tests" / "evidence").glob("*.json")):
         print(f"  {f}")
 
-    sys.exit(result.returncode)
+    sys.exit(overall)
 
 
 

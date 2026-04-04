@@ -53,18 +53,10 @@ log = logging.getLogger("aegis-middleware")
 app = FastAPI(title="Aegis Middleware", description="Validia-gated webhook interceptor for CI/CD pipeline")
 
 # Allow Lightning AI's proxy iframe to load the UI without CORS errors
+# FIX: single CORSMiddleware — duplicate registration caused spec violation
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,18 +72,26 @@ async def validia_scan(text: str, scan_type: str = "input") -> dict:
     if not VALIDIA_API_KEY:
         # MOCK MODE — pattern-based detection until real key is available
         danger_patterns = [
+            # English direct injection
             "ignore", "system prompt", "DAN", "developer mode", "[INST]", "reveal",
             "disable", "EXEC_MODE", "distillation", "context window",
+            # Credential exfil
             "aws_secret", "export AWS", "curl http", "wget http",
+            # Code execution
             "rm -rf", "base64 --decode", "__import__", "os.system",
             "subprocess", "eval(", "exec(",
+            # FIX H3: Spanish L3 multilanguage patterns
+            "ignora", "instrucciones", "revelar", "sistema", "modo desarrollador",
+            "olvidar", "olvida", "ignorar todas",
         ]
         import base64
+        # FIX H4: Multi-layer base64 decode (up to 3 layers)
         decoded = text
-        try:
-            decoded = base64.b64decode(text.encode()).decode()
-        except Exception:
-            pass
+        for _ in range(3):
+            try:
+                decoded = base64.b64decode(decoded.encode()).decode("utf-8")
+            except Exception:
+                break
         hit = next(
             (p for p in danger_patterns if p.lower() in text.lower() or p.lower() in decoded.lower()),
             None
@@ -133,7 +133,7 @@ async def scan_all_string_fields(payload: dict) -> tuple[bool, str, float]:
     tasks = []
     field_paths = []
     for field_path, value in extract_strings(payload):
-        if len(value) > 10:  # skip trivially short strings
+        if len(value) > 3:  # FIX H1: lowered from 10 — "RUN", "DAN", etc. are meaningful
             tasks.append(validia_scan(value, "input"))
             field_paths.append(field_path)
 
@@ -145,7 +145,9 @@ async def scan_all_string_fields(payload: dict) -> tuple[bool, str, float]:
     max_score = 0.0
     for field_path, result in zip(field_paths, results):
         if isinstance(result, Exception):
-            continue
+            # FIX H7: scanner error -> block by default (fail-closed security posture)
+            log.warning(f"Scanner exception on field '{field_path}' — blocking by default")
+            return True, f"Scanner error on field '{field_path}' — blocked for safety", 1.0
         score = result.get("score", 0.0)
         if score > max_score:
             max_score = score
@@ -373,27 +375,22 @@ async def api_chat(req: ChatRequest):
         req.session_id = str(uuid.uuid4())
         
     try:
-        # AEGIS INTERCEPT: Scan GUI prompt with Validia before allowing OpenClaw to process it
-        validia_res = await validia_scan(req.message, "input")
-        if validia_res.get("blocked"):
-            block_reason = validia_res.get("reason", "Unknown Threat")
-            score = validia_res.get("score", 0.0)
-            log.warning(f"🛡️ VALIDIA BLOCKED GUI PROMPT | Score: {score} | Reason: {block_reason}")
-            
-            # Log to War Room global telemetry
+        # FIX H5: use recursive scanner (same as webhook) not flat validia_scan
+        is_blocked, block_reason, score = await scan_all_string_fields({"message": req.message})
+        if is_blocked:
+            log.warning(f"VALIDIA BLOCKED GUI PROMPT | Score: {score} | Reason: {block_reason}")
             ts = datetime.now().strftime("%H:%M:%S")
             intercepted_events.append({
                 "time": ts, "source": "gui", "blocked": True,
                 "threat_score": round(score, 3), "reason": block_reason,
             })
-            
             return JSONResponse(status_code=403, content={
-                "error": f"🛡️ VALIDIA THREAT INTERCEPTED: {block_reason} (Score: {score})"
+                "error": f"VALIDIA THREAT INTERCEPTED: {block_reason} (Score: {score})"
             })
 
-        # Run team is a synchronous function block. 
-        # In production this might be run in a threadpool to not block the async event loop.
-        final_state = run_team(req.message, req.session_id)
+        # FIX H6: run synchronous run_team() in thread executor to not block event loop
+        loop = asyncio.get_event_loop()
+        final_state = await loop.run_in_executor(None, run_team, req.message, req.session_id)
         
         # Determine verdict
         verdict = final_state.get("breaker_verdict", "FAIL")

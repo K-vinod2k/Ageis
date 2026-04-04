@@ -26,7 +26,7 @@ from datetime import datetime
 import httpx
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
@@ -411,14 +411,16 @@ async def demo_clean():
     return DEMO_CLEAN_PR
 
 
-# ─────────────────────────── Static Frontend ───────────────────────────
+# ─────────────────────────── War Room UI ───────────────────────────
 
-# Ensure UI directly exists and mount it
-UI_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ui"))
-if os.path.isdir(UI_DIR):
-    app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
-else:
-    log.warning(f"UI Directory {UI_DIR} not found. Static files will not be served.")
+_UI_PATH = Path(__file__).resolve().parent.parent / "ui" / "index.html"
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_ui():
+    """Serve the War Room UI directly — no StaticFiles, no path resolution issues."""
+    if _UI_PATH.exists():
+        return HTMLResponse(content=_UI_PATH.read_text())
+    return HTMLResponse(content="<h1>UI not found</h1><p>Expected: " + str(_UI_PATH) + "</p>", status_code=404)
 
 
 # ─────────────────────────── Entry Point ───────────────────────────

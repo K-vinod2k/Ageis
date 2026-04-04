@@ -381,6 +381,9 @@ def get_graph():
     return _graph
 
 
+from utopia_runtime import utopia
+
+@utopia
 def run_team(user_input: str, session_id: str) -> dict:
     """Run the agent team for a given user input and session."""
     graph = get_graph()

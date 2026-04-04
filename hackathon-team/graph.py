@@ -185,9 +185,9 @@ def presenter_node(state: TeamState) -> dict:
         f"Plumber's work:\n{state.get('plumber_output', '')[:2000]}\n\n"
         f"Breaker's security report:\n{state.get('breaker_report', '')[:2000]}\n\n"
         f"Original request: {state['input']}\n\n"
-        "Tasks: (1) Update the War Room Streamlit UI to reflect this system, "
+        "Tasks: (1) Update the War Room Vanilla JS dashboard (ui/index.html, ui/app.js) to reflect this system, "
         "(2) draft the 3-minute judge pitch script with [timestamp] markers, "
-        "(3) write UI updates using write_file_tool."
+        "(3) write any UI updates using write_file_tool targeting the ui/ directory."
     )
     task = _with_directive(base_task, state)
     result = agent.invoke({"messages": [("human", task)]})

@@ -2,8 +2,8 @@
 AEGIS MIDDLEWARE — Validia-Gated GitHub Webhook Interceptor
 
 Architecture:
-  GitHub Webhook POST → port 8080 → Validia Scan → if SAFE → forward to OpenClaw Public URL
-                                                  → if UNSAFE → block, log to War Room, drop
+  GitHub Webhook POST -> port 8080 -> Validia Scan -> if SAFE -> forward to OpenClaw Public URL
+                                                  -> if UNSAFE -> block, log to War Room, drop
 
 This is the CI/CD Poisoned Pull Request demo:
   - Attacker submits a PR with an injected AWS key exfiltration payload in the PR description
@@ -13,7 +13,7 @@ This is the CI/CD Poisoned Pull Request demo:
 
 Set environment variables:
   OPENCLAW_URL         = https://18789-YOUR_SUBDOMAIN.cloudspaces.litng.ai
-  LIGHTNING_GATEWAY_KEY = your gateway API key from Lightning AI Profile → Global Settings → Keys
+  LIGHTNING_GATEWAY_KEY = your gateway API key from Lightning AI Profile -> Global Settings -> Keys
   VALIDIA_API_KEY      = from event credentials (mock mode if empty)
 """
 
@@ -344,7 +344,7 @@ async def get_telemetry():
 async def health():
     return {
         "status": "online",
-        "openclaw_url": OPENCLAW_URL or "not configured",
+        "openclaw_url": "configured" if OPENCLAW_URL else "not configured",
         "validia_mode": "live" if VALIDIA_API_KEY else "mock",
         "events_intercepted": len(intercepted_events),
     }
@@ -665,7 +665,7 @@ if __name__ == "__main__":
 ║  Validia:    {'LIVE' if VALIDIA_API_KEY else 'MOCK MODE (pattern detection)'}                              ║
 ╠══════════════════════════════════════════════════════╣
 ║  Demo:                                               ║
-║  Poisoned PR → POST /webhook/github                  ║
+║  Poisoned PR -> POST /webhook/github                  ║
 ║  (payload at GET /demo/poisoned-pr)                  ║
 ╚══════════════════════════════════════════════════════╝
     """)

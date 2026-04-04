@@ -11,11 +11,15 @@ import os
 from pathlib import Path
 
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import FakeEmbeddings
 from langchain_core.documents import Document
 
-# ── Try to use real embeddings, fall back to fake for offline dev ──
 def _get_embeddings():
+    """
+    Embedding priority:
+    1. OpenAI (if key available)
+    2. HuggingFace all-MiniLM-L6-v2 (local, no API key, runs on Lightning AI CPU)
+    FakeEmbeddings removed — returns random vectors and causes hallucinations during demo.
+    """
     try:
         from langchain_openai import OpenAIEmbeddings
         from config import OPENAI_API_KEY
@@ -23,8 +27,9 @@ def _get_embeddings():
             return OpenAIEmbeddings(api_key=OPENAI_API_KEY)
     except Exception:
         pass
-    # Fallback: FakeEmbeddings for local dev without API key
-    return FakeEmbeddings(size=1536)
+    # Local HuggingFace embeddings — deterministic, no API key, works offline
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 
 RAG_DATA_PATH = Path(__file__).parent.parent / "rag_data" / "threat_signatures.json"

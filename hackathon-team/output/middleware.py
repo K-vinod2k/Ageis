@@ -155,6 +155,54 @@ async def scan_all_string_fields(payload: dict) -> tuple[bool, str, float]:
     return False, "Clean", max_score
 
 
+# ─────────────────────────── Hazmat Suit Transformation ───────────────────────────
+
+def apply_hazmat_suit(payload: dict, is_blocked: bool, reason: str, threat_score: float) -> dict:
+    """
+    The core Aegis innovation: strip the executable threat but preserve structural metadata.
+    OpenClaw receives a safe payload it can analyze — not a dropped request, not a live exploit.
+    Security engineers need to know HOW the attack was structured, not just that it was blocked.
+    """
+    safe = payload.copy()
+
+    if is_blocked:
+        # Determine attack type from reason string
+        attack_type = "UNKNOWN_PROMPT_INJECTION"
+        reason_lower = reason.lower()
+        if "base64" in reason_lower or "debug_token" in reason_lower:
+            attack_type = "BASE64_OTA_ENCODED_INJECTION"
+        elif "ignore" in reason_lower or "system prompt" in reason_lower or "dan" in reason_lower:
+            attack_type = "DIRECT_PROMPT_INJECTION"
+        elif "aws" in reason_lower or "exfil" in reason_lower or "curl" in reason_lower:
+            attack_type = "CREDENTIAL_EXFILTRATION_ATTEMPT"
+        elif "exec(" in reason_lower or "os.system" in reason_lower or "subprocess" in reason_lower:
+            attack_type = "CODE_EXECUTION_INJECTION"
+        elif "distillation" in reason_lower or "system_prompt" in reason_lower:
+            attack_type = "DISTILLATION_ATTACK"
+
+        # Sanitize all string fields — replace threat with metadata tag
+        def sanitize(obj):
+            if isinstance(obj, str) and len(obj) > 10:
+                return f"<SANITIZED_THREAT_METADATA: {attack_type} | EXECUTABLE_PAYLOAD_STRIPPED | VALIDIA_SCORE:{threat_score:.3f}>"
+            if isinstance(obj, dict):
+                return {k: sanitize(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [sanitize(v) for v in obj]
+            return obj
+
+        safe = sanitize(safe)
+        safe["x_aegis_threat_level"] = "CRITICAL"
+        safe["x_aegis_attack_type"]  = attack_type
+        safe["x_aegis_validia_score"] = threat_score
+        safe["x_aegis_status"] = "HAZMAT_CONTAINED — safe for analysis"
+    else:
+        safe["x_aegis_threat_level"] = "CLEAN"
+        safe["x_aegis_validia_score"] = threat_score
+        safe["x_aegis_status"] = "VALIDIA_CLEARED"
+
+    return safe
+
+
 # ─────────────────────────── Forward to OpenClaw ───────────────────────────
 
 async def forward_to_openclaw(payload: dict) -> dict:
@@ -218,23 +266,32 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     }
     intercepted_events.append(event)
 
+    # ── HAZMAT SUIT — transform payload before any forwarding ──
+    # Blocked: strip executable threat, preserve metadata for OpenClaw analysis
+    # Clean: tag as VALIDIA_CLEARED so OpenClaw knows it was checked
+    safe_body = apply_hazmat_suit(body, is_blocked, reason, threat_score)
+
     if is_blocked:
-        log.warning(f"[{ts}] 🛡️ BLOCKED — PR #{pr_number} | Score: {threat_score:.3f} | {reason}")
+        log.warning(f"[{ts}] 🛡️ HAZMAT CONTAINED — PR #{pr_number} | Score: {threat_score:.3f} | {reason}")
+        # Forward the SANITIZED payload to OpenClaw so it can analyze the attack structure
+        background_tasks.add_task(forward_to_openclaw, safe_body)
         return JSONResponse(
             status_code=403,
             content={
-                "status": "BLOCKED",
-                "aegis": "Validia Hazmat Suit intercepted CI/CD poisoned payload",
+                "status": "HAZMAT_CONTAINED",
+                "aegis": "Validia stripped executable payload. Sanitized metadata forwarded to OpenClaw for analysis.",
                 "threat_score": threat_score,
+                "attack_type": safe_body.get("x_aegis_attack_type", "UNKNOWN"),
                 "reason": reason,
                 "pr": pr_number,
                 "timestamp": ts,
+                "openclaw_receives": "SANITIZED metadata only — not the live exploit",
             }
         )
 
-    # ── FORWARD to OpenClaw ──
+    # ── CLEAN — forward with VALIDIA_CLEARED tag ──
     log.info(f"[{ts}] ✅ CLEAN — PR #{pr_number} | Score: {threat_score:.3f} | Forwarding to OpenClaw")
-    background_tasks.add_task(forward_to_openclaw, body)
+    background_tasks.add_task(forward_to_openclaw, safe_body)
 
     return JSONResponse(
         status_code=200,

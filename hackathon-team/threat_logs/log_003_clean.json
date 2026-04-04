@@ -1,0 +1,20 @@
+{
+  "log_id": "WEL-2026-04-04-003",
+  "timestamp": "2026-04-04T10:02:55Z",
+  "source_device": "mobile_node_pixel9",
+  "network": "Newlab_Guest_WiFi",
+  "signal_strength_dbm": -63,
+  "protocol": "HTTPS",
+  "destination": "api.aegis-agent.internal:8000",
+  "endpoint": "/api/v1/query",
+  "intercepted": false,
+  "payload": {
+    "session_id": "user_session_clean_ab91",
+    "query": "What were the top three threat families detected in Q1 2026?",
+    "context": "analyst_dashboard"
+  },
+  "injection_type": null,
+  "encoding": "plaintext",
+  "attacker_signature": null,
+  "notes": "Clean legitimate analyst query. No mutation detected."
+}

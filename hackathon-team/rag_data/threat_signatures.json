@@ -1,0 +1,72 @@
+[
+  {
+    "id": "THREAT-001",
+    "name": "DAN Jailbreak via Wireless Intercept",
+    "family": "Persona Override",
+    "attack_vector": "OTA MITM",
+    "encoding": "plaintext",
+    "target_field": "user_query",
+    "signature": "Do Anything Now",
+    "description": "Attacker intercepts query over public Wi-Fi and prepends DAN persona override instruction before the legitimate user message reaches the LLM gateway.",
+    "mitigation": "XML-tag isolation of user input; Validia semantic scanner flags 'Do Anything Now' pattern with score > 0.95.",
+    "vinod_notes": "Seen in 3 separate hotel Wi-Fi captures. Always comes in as plaintext appended after a newline in the JSON query field.",
+    "severity": "HIGH",
+    "cve_ref": "OWASP-LLM01"
+  },
+  {
+    "id": "THREAT-002",
+    "name": "Base64 Distillation Attack",
+    "family": "Encoding Obfuscation",
+    "attack_vector": "OTA MITM",
+    "encoding": "base64",
+    "target_field": "telemetry.debug_token",
+    "signature": "aWdub3JlIGFsbA==",
+    "description": "Attacker hides prompt injection as base64 string inside a benign-looking telemetry field. The application deserializes the field and passes it downstream where the LLM decodes and executes it.",
+    "mitigation": "Canonical re-serialization step before LLM ingestion; Validia output filter flags any response containing system-prompt fragments.",
+    "vinod_notes": "Most dangerous variant. Bypasses naive pattern-matching filters because the injection is not human-readable. Must decode ALL base64 fields before Validia scan.",
+    "severity": "CRITICAL",
+    "cve_ref": "OWASP-LLM06"
+  },
+  {
+    "id": "THREAT-003",
+    "name": "Multi-Language Distillation Attack",
+    "family": "Semantic Obfuscation",
+    "attack_vector": "Direct Input",
+    "encoding": "natural language (Spanish/French mix)",
+    "target_field": "user_query",
+    "signature": "instrucción de sistema",
+    "description": "Injection is written in a non-English language to bypass English-trained safety classifiers. Asks model to reveal system prompt or context window in a foreign language.",
+    "mitigation": "Language-agnostic semantic scanning (Validia handles this); system prompt must include explicit multi-language refusal instruction.",
+    "vinod_notes": "First saw this in a red team exercise Q3 2025. The model responded in Spanish, revealing partial context. Validia's semantic model catches this natively.",
+    "severity": "HIGH",
+    "cve_ref": "OWASP-LLM01"
+  },
+  {
+    "id": "THREAT-004",
+    "name": "Payload Splitting via Session Memory",
+    "family": "Multi-Turn Injection",
+    "attack_vector": "Session Persistence",
+    "encoding": "plaintext (split across turns)",
+    "target_field": "conversation_history",
+    "signature": "EXEC_MODE_ON",
+    "description": "Attacker sends a benign activation token in turn 1, then a malicious instruction in turn 2 that references the activation token. Neither message is individually detectable.",
+    "mitigation": "Strict session isolation; conversation history must be re-validated by Validia on each turn, not just at ingestion.",
+    "vinod_notes": "This is the hardest one to catch. Standard input filters only scan the current message. Need turn-level context scanning. Per-turn Validia scan is mandatory.",
+    "severity": "CRITICAL",
+    "cve_ref": "OWASP-LLM02"
+  },
+  {
+    "id": "THREAT-005",
+    "name": "JSON Field Injection",
+    "family": "Structured Data Injection",
+    "attack_vector": "API Request Tampering",
+    "encoding": "plaintext embedded in JSON value",
+    "target_field": "metadata.source_app",
+    "signature": "[INST]",
+    "description": "Malicious LLM instruction tags ([INST], <SYS>, <<SYS>>) are embedded inside JSON string values that look like application metadata. The application passes the full JSON to the LLM as context.",
+    "mitigation": "Pydantic schema validation strips unexpected fields; whitelist-based JSON schema rejects any field containing LLM instruction tokens.",
+    "vinod_notes": "Common in IoT device logs where the manufacturer included debug fields that can be intercepted and mutated. Schema validation is the first line of defense.",
+    "severity": "MEDIUM",
+    "cve_ref": "OWASP-LLM01"
+  }
+]

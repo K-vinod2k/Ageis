@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis | Zero-Trust War Room</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="banner">
+        <div class="banner-title">⚔️ AEGIS — Zero-Trust Threat Analyst</div>
+        <div class="banner-right">
+            <span class="session-id" id="sessionIdDisplay">SESSION: INIT</span>
+            <div class="live-badge"><span class="pulse-dot"></span> LIVE</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Telemetry Cards -->
+        <div class="telemetry">
+            <div class="metric-card">
+                <div class="metric-value metric-red" id="metric-blocked">0</div>
+                <div class="metric-label">🛡️ Threats Blocked</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value metric-amber" id="metric-loops">0</div>
+                <div class="metric-label">🔄 Patch Loops</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value metric-blue" id="metric-agents">0</div>
+                <div class="metric-label">🤖 Agents Deployed</div>
+            </div>
+            <div class="metric-card" onclick="fetchTelemetry()" style="cursor: pointer;" title="Refresh Telemetry">
+                <div class="metric-value metric-green" id="metric-clean">0</div>
+                <div class="metric-label">✅ Clean Inputs (Click to sync)</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left: Agent Activity Feed -->
+            <div class="panel agent-feed">
+                <div class="section-header">🔬 Vinod's Workflow Automated — Threat Analysis Feed</div>
+                <div id="agentLogContainer" class="log-container">
+                    <div class="empty-state">No agent activity yet. Send a directive below to begin absolute security patching.</div>
+                </div>
+            </div>
+
+            <!-- Right: Hazmat Suit Log & Roster -->
+            <div class="right-column">
+                <div class="panel">
+                    <div class="section-header">☣️ Hazmat Suit — Validia Containment Layer</div>
+                    <div id="interceptLogContainer" class="intercept-log">
+                        <div class="log-entry log-info">
+                            <span class="log-time">STANDBY</span><br>
+                            <span class="log-label-info">☣️ HAZMAT SUIT ACTIVE</span><br>
+                            Validia containment layer online via FastAPI.<br>
+                            Monitoring /webhook/github for incoming wireless payloads...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel agent-roster">
+                    <div class="section-header">🤖 Agent Roster</div>
+                    <div class="roster-list">
+                        <div class="roster-item" id="roster-builder">
+                            <div><span class="agent-icon" style="color: #58a6ff;">🏗️</span> <strong style="color: #58a6ff;">BUILDER</strong><br><span class="agent-role">Cognitive Architect</span></div>
+                            <span class="status-badge" id="badge-builder">IDLE</span>
+                        </div>
+                        <div class="roster-item" id="roster-breaker">
+                            <div><span class="agent-icon" style="color: #f85149;">🔴</span> <strong style="color: #f85149;">BREAKER</strong><br><span class="agent-role">Adversarial Payload</span></div>
+                            <span class="status-badge" id="badge-breaker">IDLE</span>
+                        </div>
+                        <div class="roster-item" id="roster-plumber">
+                            <div><span class="agent-icon" style="color: #3fb950;">🔧</span> <strong style="color: #3fb950;">PLUMBER</strong><br><span class="agent-role">Zero-Trust Config</span></div>
+                            <span class="status-badge" id="badge-plumber">IDLE</span>
+                        </div>
+                        <div class="roster-item" id="roster-presenter">
+                            <div><span class="agent-icon" style="color: #bc8cff;">📊</span> <strong style="color: #bc8cff;">PRESENTER</strong><br><span class="agent-role">Threat Intel</span></div>
+                            <span class="status-badge" id="badge-presenter">IDLE</span>
+                        </div>
+                        <div class="roster-item" id="roster-evaluator">
+                            <div><span class="agent-icon" style="color: #e8b04b;">🧠</span> <strong style="color: #e8b04b;">EVALUATOR</strong><br><span class="agent-role">Quality Oracle</span></div>
+                            <span class="status-badge" id="badge-evaluator">IDLE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-area">
+            <div class="section-header" style="border: none; margin-bottom: 5px;">⌨️ Command Input</div>
+            <div class="input-wrapper">
+                <input type="text" id="chatInput" placeholder="Type your mission directive to the team... (e.g. 'Deploy User Auth module')">
+                <button id="sendBtn" class="premium-button">EXECUTE</button>
+            </div>
+            <div id="loadingIndicator" class="loading-indicator">🔄 Agents executing... Loop of Absolute Security engaged</div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

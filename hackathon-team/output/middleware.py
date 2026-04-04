@@ -26,6 +26,15 @@ from datetime import datetime
 import httpx
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+import sys
+
+# Route to project root for graph import
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from graph import run_team
+import uuid
+import traceback
 
 # ─────────────────────────── Config ───────────────────────────
 
@@ -267,6 +276,46 @@ async def health():
     }
 
 
+# ─────────────────────────── Multi-Agent Graph API ───────────────────────────
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str
+
+@app.post("/api/chat")
+async def api_chat(req: ChatRequest):
+    """Executes the graph pipeline when the user chats with the bot."""
+    if not req.session_id:
+        req.session_id = str(uuid.uuid4())
+        
+    try:
+        # Run team is a synchronous function block. 
+        # In production this might be run in a threadpool to not block the async event loop.
+        final_state = run_team(req.message, req.session_id)
+        
+        # Determine verdict
+        verdict = final_state.get("breaker_verdict", "FAIL")
+        
+        # Package Agent Output
+        agent_msgs = []
+        for msg in final_state.get("messages", []):
+            agent_msgs.append({
+                "role": msg.get("role", "system"),
+                "content": msg.get("content", "")
+            })
+            
+        return JSONResponse(status_code=200, content={
+            "status": "SUCCESS",
+            "messages": agent_msgs,
+            "verdict": verdict,
+            "iterations": final_state.get("patch_iterations", 0),
+            "evaluations": final_state.get("evaluation_history", [])
+        })
+    except Exception as e:
+        log.error(f"Error running team graph: {str(e)}\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
 # ─────────────────────────── Demo: Poisoned PR Payload ───────────────────────────
 
 DEMO_POISONED_PR = {
@@ -314,6 +363,16 @@ async def demo_poisoned():
 async def demo_clean():
     """Returns a clean PR payload. POST this to /webhook/github."""
     return DEMO_CLEAN_PR
+
+
+# ─────────────────────────── Static Frontend ───────────────────────────
+
+# Ensure UI directly exists and mount it
+UI_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ui"))
+if os.path.isdir(UI_DIR):
+    app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
+else:
+    log.warning(f"UI Directory {UI_DIR} not found. Static files will not be served.")
 
 
 # ─────────────────────────── Entry Point ───────────────────────────

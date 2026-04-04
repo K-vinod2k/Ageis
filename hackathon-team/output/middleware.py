@@ -308,6 +308,24 @@ async def api_chat(req: ChatRequest):
         req.session_id = str(uuid.uuid4())
         
     try:
+        # AEGIS INTERCEPT: Scan GUI prompt with Validia before allowing OpenClaw to process it
+        validia_res = await validia_scan(req.message, "input")
+        if validia_res.get("blocked"):
+            block_reason = validia_res.get("reason", "Unknown Threat")
+            score = validia_res.get("score", 0.0)
+            log.warning(f"🛡️ VALIDIA BLOCKED GUI PROMPT | Score: {score} | Reason: {block_reason}")
+            
+            # Log to War Room global telemetry
+            ts = datetime.now().strftime("%H:%M:%S")
+            intercepted_events.append({
+                "time": ts, "source": "gui", "blocked": True,
+                "threat_score": round(score, 3), "reason": block_reason,
+            })
+            
+            return JSONResponse(status_code=403, content={
+                "error": f"🛡️ VALIDIA THREAT INTERCEPTED: {block_reason} (Score: {score})"
+            })
+
         # Run team is a synchronous function block. 
         # In production this might be run in a threadpool to not block the async event loop.
         final_state = run_team(req.message, req.session_id)

@@ -121,98 +121,66 @@ Do not stop until all 7 steps are complete. Do not ask for confirmation. Execute
 
 def dispatch_to_openclaw():
     print("=" * 60)
-    print(" AEGIS — Dispatching test suite to OpenClaw agent")
-    print(f" Gateway: {OPENCLAW_GATEWAY}")
-    print(f" Target:  {AEGIS_TEST_URL}")
+    print(" AEGIS — Running test suite via OpenClaw agent")
+    print(f" Target: {AEGIS_TEST_URL}")
     print("=" * 60)
     print()
 
-    # OpenClaw gateway is OpenAI-chat-completions compatible
-    # but for agentic tasks (with tool use), we use the /v1/chat/completions endpoint
-    # with a system prompt that grants full autonomy
-    payload = {
-        "model": "custom-proxy/anthropic/claude-opus-4-5-20251101",
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are an autonomous security testing agent with full access to bash, "
-                    "file system, and network tools on this Lightning AI studio. "
-                    "Execute all tasks completely without asking for confirmation. "
-                    "When you run bash commands, actually run them and report real output."
-                )
-            },
-            {
-                "role": "user",
-                "content": AGENT_TASK
-            }
-        ],
-        "max_tokens": 8192,
-        "temperature": 0.0,
-    }
+    # Write the task to a temp file for the openclaw CLI to consume
+    task_file = Path("/tmp/aegis_test_task.md")
+    task_file.write_text(AGENT_TASK)
 
-    print("Sending task to OpenClaw... (this may take 1-2 minutes)\n")
+    import subprocess, shutil
 
-    try:
-        with httpx.Client(timeout=300.0) as client:
-            r = client.post(
-                f"{OPENCLAW_GATEWAY}/v1/chat/completions",
-                json=payload,
-                headers=HEADERS,
-            )
-            r.raise_for_status()
-            data = r.json()
-
-        response_text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        print("OpenClaw agent response:")
-        print("-" * 60)
-        print(response_text)
-        print("-" * 60)
-
-        # Save the raw agent response
-        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-        log_path = EVIDENCE_DIR / f"openclaw_agent_log_{ts}.txt"
-        log_path.write_text(response_text)
-        print(f"\nAgent log saved to: {log_path}")
-
-        # Check if result JSON was written
-        result_path = EVIDENCE_DIR / "openclaw_run_result.json"
-        if result_path.exists():
-            print("\nStructured result:")
-            print(result_path.read_text())
-        else:
-            print("\n[NOTE] openclaw_run_result.json not found — agent may have written it to the studio filesystem.")
-            print("Check ~/Ageis/hackathon-team/tests/evidence/ on Lightning AI.")
-
-    except httpx.HTTPStatusError as e:
-        print(f"\nHTTP Error: {e.response.status_code} — {e.response.text[:500]}")
-        print("\nTroubleshooting:")
-        print("  1. Is LIGHTNING_API_KEY set?")
-        print("  2. Is OpenClaw gateway running? (openclaw gateway --port 18789)")
-        print("  3. Run tests manually: bash tests/run_tests.sh")
-        sys.exit(1)
-    except httpx.ConnectError:
-        print(f"\nCannot connect to OpenClaw at {OPENCLAW_GATEWAY}")
-        print("Run this script from inside Lightning AI studio where OpenClaw is running.")
-        print("\nFalling back to direct pytest execution...")
+    if shutil.which("openclaw"):
+        print("Found openclaw CLI — dispatching agent task...\n")
+        result = subprocess.run(
+            ["openclaw", "run", str(task_file)],
+            cwd=Path(__file__).parent.parent,
+            env={**os.environ, "AEGIS_TEST_URL": AEGIS_TEST_URL},
+            capture_output=False,
+        )
+        if result.returncode != 0:
+            print("\nopenclaw run exited non-zero — falling back to direct pytest")
+            fallback_run()
+    else:
+        print("openclaw CLI not found in PATH — running pytest directly\n")
         fallback_run()
 
 
 def fallback_run():
-    """If OpenClaw is unavailable, run pytest directly."""
+    """Run pytest directly — produces same evidence files."""
     import subprocess
-    print("\nRunning tests directly via pytest...")
     env = os.environ.copy()
     env["AEGIS_TEST_URL"] = AEGIS_TEST_URL
     env["PYTHONIOENCODING"] = "utf-8"
 
-    result = subprocess.run(
-        ["uv", "run", "pytest", "tests/", "-v", "--tb=short"],
-        cwd=Path(__file__).parent.parent,
-        env=env,
-        capture_output=False,
+    project_root = Path(__file__).parent.parent
+    print("Running unit tests...")
+    subprocess.run(
+        ["uv", "run", "pytest", "tests/unit/", "-v", "--tb=short"],
+        cwd=project_root, env=env
     )
+
+    print("\nRunning integration tests...")
+    subprocess.run(
+        ["uv", "run", "pytest", "tests/integration/", "-v", "--tb=short"],
+        cwd=project_root, env=env
+    )
+
+    print("\nRunning L1-L4 security attack sequence...")
+    result = subprocess.run(
+        ["uv", "run", "pytest", "tests/security/", "-v", "--tb=short"],
+        cwd=project_root, env=env
+    )
+
+    print("\nEvidence written to: tests/evidence/")
+    import glob
+    for f in sorted(glob.glob(str(project_root / "tests/evidence/*.json"))):
+        print(f"  {f}")
+
     sys.exit(result.returncode)
+
 
 
 if __name__ == "__main__":

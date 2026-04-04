@@ -652,6 +652,15 @@ async def serve_ui():
     return HTMLResponse(content=WAR_ROOM_HTML)
 
 
+@app.get("/demo", response_class=HTMLResponse)
+async def serve_demo():
+    """Interactive step-by-step pipeline walkthrough for demo recording."""
+    demo_path = Path(__file__).resolve().parent.parent / "ui" / "demo.html"
+    if demo_path.exists():
+        return HTMLResponse(content=demo_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>Demo page not found</h1>")
+
+
 # --------------------------- Entry Point ---------------------------
 
 if __name__ == "__main__":

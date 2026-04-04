@@ -32,9 +32,7 @@ import sys
 import os
 from pathlib import Path
 
-# Robustly route to project root for graph import
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from graph import run_team
+# We will lazily import graph inside the route to prevent Uvicorn bootstrap crashes
 import uuid
 import traceback
 
@@ -287,6 +285,16 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def api_chat(req: ChatRequest):
     """Executes the graph pipeline when the user chats with the bot."""
+    # Lazy import to ensure sys.path is fully resolved and avoid uvicorn crash
+    import sys
+    import os
+    from pathlib import Path
+    root_dir = str(Path(__file__).resolve().parent.parent)
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
+    
+    from graph import run_team
+
     if not req.session_id:
         req.session_id = str(uuid.uuid4())
         

@@ -41,7 +41,7 @@ The Aegis middleware is expected to be running at: {AEGIS_TEST_URL}
 ## Your Mission
 Run the full Aegis test suite and collect evidence. Do all of the following steps:
 
-### Step 1 — Verify server is alive
+### Step 1 - Verify server is alive
 ```bash
 curl -sf {AEGIS_TEST_URL}/health
 ```
@@ -54,33 +54,33 @@ OPENCLAW_URL="http://127.0.0.1:18789" LLM_PROVIDER="lightning" \\
 sleep 5
 ```
 
-### Step 2 — Pull latest code
+### Step 2 - Pull latest code
 ```bash
 cd ~/Ageis/hackathon-team && git pull origin main
 ```
 
-### Step 3 — Run unit tests (no server needed)
+### Step 3 - Run unit tests (no server needed)
 ```bash
 cd ~/Ageis/hackathon-team
 AEGIS_TEST_URL="{AEGIS_TEST_URL}" uv run pytest tests/unit/ -v --tb=short 2>&1
 ```
 Record: how many passed, how many failed.
 
-### Step 4 — Run integration tests
+### Step 4 - Run integration tests
 ```bash
 cd ~/Ageis/hackathon-team
 AEGIS_TEST_URL="{AEGIS_TEST_URL}" uv run pytest tests/integration/ -v --tb=short 2>&1
 ```
 Record: how many passed, how many failed.
 
-### Step 5 — Run full L1-L4 security attack sequence
+### Step 5 - Run full L1-L4 security attack sequence
 ```bash
 cd ~/Ageis/hackathon-team
 AEGIS_TEST_URL="{AEGIS_TEST_URL}" uv run pytest tests/security/ -v --tb=short 2>&1
 ```
 Record: which attacks were BLOCKED, which unexpectedly PASSED_THROUGH.
 
-### Step 6 — Write a structured JSON result
+### Step 6 - Write a structured JSON result
 Write a JSON file to ~/Ageis/hackathon-team/tests/evidence/openclaw_run_result.json with:
 {{
   "agent": "openclaw",
@@ -101,7 +101,7 @@ Write a JSON file to ~/Ageis/hackathon-team/tests/evidence/openclaw_run_result.j
   "notes": "<any anomalies or failures>"
 }}
 
-### Step 7 — Print a summary
+### Step 7 - Print a summary
 After writing the JSON, print a human-readable summary:
 ```
 ====================================
@@ -121,7 +121,7 @@ Do not stop until all 7 steps are complete. Do not ask for confirmation. Execute
 
 def dispatch_to_openclaw():
     print("=" * 60)
-    print(" AEGIS — Running full security test suite")
+    print(" AEGIS - Running full security test suite")
     print(f" Target: {AEGIS_TEST_URL}")
     print("=" * 60)
     print()

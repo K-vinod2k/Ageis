@@ -1,5 +1,5 @@
 """
-Integration Tests — Middleware Endpoints
+Integration Tests - Middleware Endpoints
 Requires server running at AEGIS_TEST_URL (default: http://localhost:8080).
 """
 import pytest

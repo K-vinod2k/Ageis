@@ -1,5 +1,5 @@
 """
-Aegis Test Suite — conftest.py
+Aegis Test Suite - conftest.py
 Assumes middleware is running at BASE_URL (default: http://localhost:8080).
 Set AEGIS_TEST_URL env var to override for Lightning AI.
 """

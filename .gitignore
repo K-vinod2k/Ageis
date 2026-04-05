@@ -1,0 +1,54 @@
+# ── Secrets ───────────────────────────────────────────────────
+.env
+*.pem
+*.key
+secrets/
+
+# ── Media / large binaries (not for git) ──────────────────────
+*.mp4
+*.mp3
+*.mov
+*.zip
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environments ───────────────────────────────────────
+.venv/
+venv/
+env/
+.conda/
+
+# ── macOS ─────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs / runtime state ──────────────────────────────────────
+*.log
+evaluator_logs/
+memory/
+chroma_db/
+
+# ── External tools (not part of this repo) ────────────────────
+lightning_studio/
+openclaw/
+
+# ── Misc ──────────────────────────────────────────────────────
+*.skill
+Pushing Aegis Repository To GitHub.md
